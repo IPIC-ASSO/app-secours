@@ -1,0 +1,16 @@
+com.ipiccie.app_secours.app-debug-0 C:\Users\IIdri\Desktop\LE_dossier\IPIC_cie\app-secours\app_flutter\android\app\src\debug\res
+com.ipiccie.app_secours.app-main-1 C:\Users\IIdri\Desktop\LE_dossier\IPIC_cie\app-secours\app_flutter\android\app\src\main\res
+com.ipiccie.app_secours.app-pngs-2 C:\Users\IIdri\Desktop\LE_dossier\IPIC_cie\app-secours\app_flutter\build\app\generated\res\pngs\debug
+com.ipiccie.app_secours.app-resValues-3 C:\Users\IIdri\Desktop\LE_dossier\IPIC_cie\app-secours\app_flutter\build\app\generated\res\resValues\debug
+com.ipiccie.app_secours.app-rs-4 C:\Users\IIdri\Desktop\LE_dossier\IPIC_cie\app-secours\app_flutter\build\app\generated\res\rs\debug
+com.ipiccie.app_secours.app-mergeDebugResources-5 C:\Users\IIdri\Desktop\LE_dossier\IPIC_cie\app-secours\app_flutter\build\app\intermediates\incremental\debug\mergeDebugResources\merged.dir
+com.ipiccie.app_secours.app-mergeDebugResources-6 C:\Users\IIdri\Desktop\LE_dossier\IPIC_cie\app-secours\app_flutter\build\app\intermediates\incremental\debug\mergeDebugResources\stripped.dir
+com.ipiccie.app_secours.app-merged_res-7 C:\Users\IIdri\Desktop\LE_dossier\IPIC_cie\app-secours\app_flutter\build\app\intermediates\merged_res\debug
+com.ipiccie.app_secours.app-packaged_res-8 C:\Users\IIdri\Desktop\LE_dossier\IPIC_cie\app-secours\app_flutter\build\file_saver\intermediates\packaged_res\debug
+com.ipiccie.app_secours.app-packaged_res-9 C:\Users\IIdri\Desktop\LE_dossier\IPIC_cie\app-secours\app_flutter\build\path_provider_android\intermediates\packaged_res\debug
+com.ipiccie.app_secours.app-packaged_res-10 C:\Users\IIdri\Desktop\LE_dossier\IPIC_cie\app-secours\app_flutter\build\syncfusion_flutter_pdfviewer\intermediates\packaged_res\debug
+com.ipiccie.app_secours.app-packaged_res-11 C:\Users\IIdri\Desktop\LE_dossier\IPIC_cie\app-secours\app_flutter\build\url_launcher_android\intermediates\packaged_res\debug
+com.ipiccie.app_secours.app-jetified-annotation-experimental-1.1.0-12 C:\Users\IIdri\Downloads\JoystickView-master\JoystickView-master\gradle\caches\transforms-3\1a401c14ca3d886b55f5bf0059ccfaa0\transformed\jetified-annotation-experimental-1.1.0\res
+com.ipiccie.app_secours.app-core-1.6.0-13 C:\Users\IIdri\Downloads\JoystickView-master\JoystickView-master\gradle\caches\transforms-3\98a157f259bbb6cd058c7234f3f1bcca\transformed\core-1.6.0\res
+com.ipiccie.app_secours.app-jetified-window-1.0.0-beta04-14 C:\Users\IIdri\Downloads\JoystickView-master\JoystickView-master\gradle\caches\transforms-3\997e383e42b3d24e891e019c8532a6ee\transformed\jetified-window-1.0.0-beta04\res
+com.ipiccie.app_secours.app-jetified-window-java-1.0.0-beta04-15 C:\Users\IIdri\Downloads\JoystickView-master\JoystickView-master\gradle\caches\transforms-3\c7bdddac5101e37b0ef39ca8c228fc13\transformed\jetified-window-java-1.0.0-beta04\res
