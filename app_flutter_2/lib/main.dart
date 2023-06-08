@@ -3,11 +3,12 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
+
 import 'package:path_provider/path_provider.dart' as p;
 
 import 'declenchement.dart';
-import 'menu.dart';
 
 void main() {
   runApp(const MyApp());
@@ -67,7 +68,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text('Listes des dispositifs'),
+        title: Text('Liste des dispositifs'),
       ),
       body:FutureBuilder<Map<String,String>>(
         future: litFichiers(), // a previously-obtained Future<String> or null
@@ -144,6 +145,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<Map<String,String>> litFichiers() async {
+    if(!await verif_perm()) throw Exception('Oups, l\'application ne va pas pouvoir lire et écrire de PDF, il lui faut un accès au stockage.');;
     Directory? telechargements;
     if (Platform.isIOS) {
       telechargements = await getDownloadsDirectory();
@@ -202,4 +204,16 @@ class _MyHomePageState extends State<MyHomePage> {
     _document.dispose();
     super.dispose();
   }
+
+  Future<bool> verif_perm() async {
+    var status = await Permission.storage;
+    if (await status.isDenied) {
+      var stat2 = await Permission.storage.request();
+      if (await stat2.isGranted)return true;
+      else return false;
+    }
+    else return true;
+  }
+
+  //TODO: perm écriture
 }

@@ -1,4 +1,4 @@
-package com.ipicasso.appsecours.app_flutter_2;
+package com.ipicasso.appsecours;
 
 import io.flutter.embedding.android.FlutterActivity;
 

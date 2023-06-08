@@ -1,5 +1,6 @@
 import 'package:app_secours/menu.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_xlider/flutter_xlider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'Officiant.dart';
 
@@ -72,6 +73,19 @@ class _VitalState extends State<Vital> {
   bool dilatees_D = false;
   bool serrees_G = false;
   bool serrees_D = false;
+  bool mains_G = false;
+  bool mains_D = false;
+  bool bras_G = false;
+  bool bras_D = false;
+  bool jambe_G = false;
+  bool jambe_D = false;
+  bool pied_G = false;
+  bool pied_D = false;
+  int yeux = 0;
+  int verbale = 0;
+  int motrice = 0;
+  List<Color> couleurs = [Colors.green,Colors.orange,Colors.red];
+
 
   //autre
   int position = -1;
@@ -333,6 +347,7 @@ class _VitalState extends State<Vital> {
                         onChanged: (int? value) {
                           setState(() {
                             respiration = value??-1;
+                            enr = false;
                           });
                         },
                       ),
@@ -346,6 +361,7 @@ class _VitalState extends State<Vital> {
                         onChanged: (int? value) {
                           setState(() {
                             respiration = value??-1;
+                            enr = false;
                           });
                         },
                       ),
@@ -359,6 +375,7 @@ class _VitalState extends State<Vital> {
                         onChanged: (int? value) {
                           setState(() {
                             respiration = value??-1;
+                            enr = false;
                           });
                         },
                       ),
@@ -406,6 +423,7 @@ class _VitalState extends State<Vital> {
                         toggleable: true,
                         onChanged: (int? value) {
                           setState(() {
+                            enr = false;
                             circulation = value??-1;
                           });
                         },
@@ -432,6 +450,7 @@ class _VitalState extends State<Vital> {
                         toggleable: true,
                         onChanged: (int? value) {
                           setState(() {
+                            enr = false;
                             circulation = value??-1;
                           });
                         },
@@ -887,6 +906,7 @@ class _VitalState extends State<Vital> {
                           toggleable: true,
                           onChanged: (int? value) {
                             setState(() {
+                              enr = false;
                               type_respiration = value??-1;
                             });
                           },
@@ -901,6 +921,7 @@ class _VitalState extends State<Vital> {
                           toggleable: true,
                           onChanged: (int? value) {
                             setState(() {
+                              enr = false;
                               type_respiration = value??-1;
                             });
                           },
@@ -915,6 +936,7 @@ class _VitalState extends State<Vital> {
                           toggleable: true,
                           onChanged: (int? value) {
                             setState(() {
+                              enr = false;
                               type_respiration = value??-1;
                             });
                           },
@@ -929,6 +951,7 @@ class _VitalState extends State<Vital> {
                           toggleable: true,
                           onChanged: (int? value) {
                             setState(() {
+                              enr = false;
                               type_respiration = value??-1;
                             });
                           },
@@ -1071,7 +1094,7 @@ class _VitalState extends State<Vital> {
                           Expanded(
                               child: Divider()
                           ),
-                          Text("Pupilles"),
+                          Text("Pupilles",style: TextStyle(fontWeight: FontWeight.bold)),
                           Expanded(
                               child: Divider()
                           ),
@@ -1094,7 +1117,7 @@ class _VitalState extends State<Vital> {
                           ),
                         ),
                         ListTile(
-                          title: const Text('Inegales'),
+                          title: const Text('Inégales'),
                           leading: Radio<int>(
                             value: 1,
                             groupValue: pupilles_egales,
@@ -1110,61 +1133,595 @@ class _VitalState extends State<Vital> {
                       ],
                     ),
                     Row(children: <Widget>[
-                      Flexible(flex: 0,child:
-                      SizedBox(
-                          width: 100,
-                          child:Padding(padding:const EdgeInsets.all(4),child: Stack(
-                            children: [
-                              Checkbox(
-                                value: true, // Valeur actuelle de la case à cocher
-                                onChanged: (value) {
-                                },
-                              ),
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: Icon(
-                                  Icons.star,
-                                  color: Colors.grey, // Couleur de l'icône dans le fond de la case à cocher
-                                  size: 24.0, // Taille de l'icône
-                                ),
-                              ),
-                            ],
-                          ))
-                      ), ),
                       Expanded(flex: 1,child:
+                      SizedBox(
+                        width: 100,
+                        child:Padding(
+                          padding: const EdgeInsets.only(left: 10),
+                          child: CheckboxListTile(
+                            title: const Text("G", softWrap: true,),
+                            contentPadding: const EdgeInsets.all(0),
+                            value: areactives_G,
+                            onChanged: (vla) {
+                              setState(() {
+                                enr = false;
+                                areactives_G = vla??false;
+                              });
+                            },
+                          ),
+                        ),)),
+                      Expanded(flex: 3,child:
                       SizedBox(
                         width: 1000,
                         child:Padding(
                           padding: const EdgeInsets.only(left: 0),
                           child: CheckboxListTile(
-                            title: const Text("aréactives", softWrap: true,),
+                            controlAffinity: ListTileControlAffinity.leading,
+                            title: const Text("D  aréactives", softWrap: true,),
                             contentPadding: const EdgeInsets.all(0),
-                            value: repos,
+                            value: areactives_D,
                             onChanged: (vla) {
                               setState(() {
                                 enr = false;
-                                repos = vla??false;
+                                areactives_D = vla??false;
                               });
                             },
                           ),
                         ),))
                     ],
                     ),
+                    Row(children: <Widget>[
+                      Expanded(flex: 1,child:
+                      SizedBox(
+                        width: 100,
+                        child:Padding(
+                          padding: const EdgeInsets.only(left: 10),
+                          child: CheckboxListTile(
+                            title: const Text("G", softWrap: true,),
+                            contentPadding: const EdgeInsets.all(0),
+                            value: dilatees_G,
+                            onChanged: (vla) {
+                              setState(() {
+                                enr = false;
+                                dilatees_G = vla??false;
+                              });
+                            },
+                          ),
+                        ),)),
+                      Expanded(flex: 3,child:
+                      SizedBox(
+                        width: 1000,
+                        child:Padding(
+                          padding: const EdgeInsets.only(left: 0),
+                          child: CheckboxListTile(
+                            controlAffinity: ListTileControlAffinity.leading,
+                            title: const Text("D  dilatées", softWrap: true,),
+                            subtitle: Text("mydriase"),
+                            contentPadding: const EdgeInsets.all(0),
+                            value: dilatees_D,
+                            onChanged: (vla) {
+                              setState(() {
+                                enr = false;
+                                dilatees_D = vla??false;
+                              });
+                            },
+                          ),
+                        ),))
+                    ],
+                    ),
+                    Row(children: <Widget>[
+                      Expanded(flex: 1,child:
+                      SizedBox(
+                        width: 100,
+                        child:Padding(
+                          padding: const EdgeInsets.only(left: 10),
+                          child: CheckboxListTile(
+                            title: const Text("G", softWrap: true,),
+                            contentPadding: const EdgeInsets.all(0),
+                            value: serrees_G,
+                            onChanged: (vla) {
+                              setState(() {
+                                enr = false;
+                                serrees_G = vla??false;
+                              });
+                            },
+                          ),
+                        ),)),
+                      Expanded(flex: 3,child:
+                      SizedBox(
+                        width: 1000,
+                        child:Padding(
+                          padding: const EdgeInsets.only(left: 0),
+                          child: CheckboxListTile(
+                            controlAffinity: ListTileControlAffinity.leading,
+                            title: const Text("D  serrées", softWrap: true,),
+                            subtitle: const Text("myosis"),
+                            contentPadding: const EdgeInsets.all(0),
+                            value: serrees_D,
+                            onChanged: (vla) {
+                              setState(() {
+                                enr = false;
+                                serrees_D = vla??false;
+                              });
+                            },
+                          ),
+                        ),))
+                    ],
+                    ),
+                    Row(
+                        children: const <Widget>[
+                          Expanded(
+                              child: Divider()
+                          ),
+                          Text("Sensimotricité",style: TextStyle(fontWeight: FontWeight.bold)),
+                          Expanded(
+                              child: Divider()
+                          ),
+                        ]
+                    ),
+                    const Positioned(child: Align(
+                      alignment: Alignment.centerLeft,
+                      child:
+                      Padding(padding: EdgeInsets.all(4),child:
+                      Text("Cocher les cases lorsque la sensimotrie fonctionne", style: TextStyle(fontStyle: FontStyle.italic))
+                      ),
+                    )),
+                    Row(children: <Widget>[
+                      Expanded(flex: 1,child:
+                      SizedBox(
+                        width: 100,
+                        child:Padding(
+                          padding: const EdgeInsets.only(left: 10),
+                          child: CheckboxListTile(
+                            title: const Text("G", softWrap: true,),
+                            contentPadding: const EdgeInsets.all(0),
+                            value: mains_G,
+                            onChanged: (vla) {
+                              setState(() {
+                                enr = false;
+                                mains_G = vla??false;
+                              });
+                            },
+                          ),
+                        ),)),
+                      Expanded(flex: 3,child:
+                      SizedBox(
+                        width: 1000,
+                        child:Padding(
+                          padding: const EdgeInsets.only(left: 0),
+                          child: CheckboxListTile(
+                            controlAffinity: ListTileControlAffinity.leading,
+                            title: const Text("D  mains", softWrap: true,),
+                            contentPadding: const EdgeInsets.all(0),
+                            value: mains_D,
+                            onChanged: (vla) {
+                              setState(() {
+                                enr = false;
+                                mains_D = vla??false;
+                              });
+                            },
+                          ),
+                        ),))
+                    ],
+                    ),
+                    Row(children: <Widget>[
+                      Expanded(flex: 1,child:
+                      SizedBox(
+                        width: 100,
+                        child:Padding(
+                          padding: const EdgeInsets.only(left: 10),
+                          child: CheckboxListTile(
+                            title: const Text("G", softWrap: true,),
+                            contentPadding: const EdgeInsets.all(0),
+                            value: bras_G,
+                            onChanged: (vla) {
+                              setState(() {
+                                enr = false;
+                                bras_G = vla??false;
+                              });
+                            },
+                          ),
+                        ),)),
+                      Expanded(flex: 3,child:
+                      SizedBox(
+                        width: 1000,
+                        child:Padding(
+                          padding: const EdgeInsets.only(left: 0),
+                          child: CheckboxListTile(
+                            controlAffinity: ListTileControlAffinity.leading,
+                            title: const Text("D  bras", softWrap: true,),
+                            contentPadding: const EdgeInsets.all(0),
+                            value: bras_D,
+                            onChanged: (vla) {
+                              setState(() {
+                                enr = false;
+                                bras_D = vla??false;
+                              });
+                            },
+                          ),
+                        ),))
+                    ],
+                    ),
+                    Row(children: <Widget>[
+                      Expanded(flex: 1,child:
+                      SizedBox(
+                        width: 100,
+                        child:Padding(
+                          padding: const EdgeInsets.only(left: 10),
+                          child: CheckboxListTile(
+                            title: const Text("G", softWrap: true,),
+                            contentPadding: const EdgeInsets.all(0),
+                            value: jambe_G,
+                            onChanged: (vla) {
+                              setState(() {
+                                enr = false;
+                                jambe_G = vla??false;
+                              });
+                            },
+                          ),
+                        ),)),
+                      Expanded(flex: 3,child:
+                      SizedBox(
+                        width: 1000,
+                        child:Padding(
+                          padding: const EdgeInsets.only(left: 0),
+                          child: CheckboxListTile(
+                            controlAffinity: ListTileControlAffinity.leading,
+                            title: const Text("D  jambe", softWrap: true,),
+                            contentPadding: const EdgeInsets.all(0),
+                            value: jambe_D,
+                            onChanged: (vla) {
+                              setState(() {
+                                enr = false;
+                                jambe_D = vla??false;
+                              });
+                            },
+                          ),
+                        ),))
+                    ],
+                    ),
+                    Row(children: <Widget>[
+                      Expanded(flex: 1,child:
+                      SizedBox(
+                        width: 100,
+                        child:Padding(
+                          padding: const EdgeInsets.only(left: 10),
+                          child: CheckboxListTile(
+                            title: const Text("G", softWrap: true,),
+                            contentPadding: const EdgeInsets.all(0),
+                            value: pied_G,
+                            onChanged: (vla) {
+                              setState(() {
+                                enr = false;
+                                pied_G = vla??false;
+                              });
+                            },
+                          ),
+                        ),)),
+                      Expanded(flex: 3,child:
+                      SizedBox(
+                        width: 1000,
+                        child:Padding(
+                          padding: const EdgeInsets.only(left: 0),
+                          child: CheckboxListTile(
+                            controlAffinity: ListTileControlAffinity.leading,
+                            title: const Text("D  pieds", softWrap: true,),
+                            contentPadding: const EdgeInsets.all(0),
+                            value: pied_D,
+                            onChanged: (vla) {
+                              setState(() {
+                                enr = false;
+                                pied_D = vla??false;
+                              });
+                            },
+                          ),
+                        ),))
+                    ],
+                    ),
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(3,5,3,10),
+                      child:
+                    Row(
+                        children: const <Widget>[
+                          Expanded(
+                              child: Divider()
+                          ),
+                          Text("Score de Glasgow", style: TextStyle(fontWeight: FontWeight.bold)),
+                          Expanded(
+                              child: Divider()
+                          ),
+                        ]
+                    )),
+                    ExpansionTile(
+                    title: Row(
+                    children:[
+                    Icon(Icons.remove_red_eye_outlined),
+                    Text(" Ouvre les yeux", style: TextStyle(fontWeight: FontWeight.bold))]),
+                    textColor: Colors.green[100],
+                    collapsedTextColor: Colors.black,
+                    collapsedBackgroundColor: Colors.green[100],
+                    iconColor: Colors.black,
+                    children: <Widget>[
+                      Column(
+                        children: [
+                          ListTile(
+                            title: const Text('4. spontané'),
+                            leading: Radio<int>(
+                              value: 4,
+                              groupValue: yeux,
+                              toggleable: true,
+                              onChanged: (int? value) {
+                                setState(() {
+                                  enr = false;
+                                  yeux = value??0;
+                                });
+                              },
+                            ),
+                          ),
+                          ListTile(
+                            title: const Text('3. à la demande'),
+                            leading: Radio<int>(
+                              value: 3,
+                              groupValue: yeux,
+                              toggleable: true,
+                              onChanged: (int? value) {
+                                setState(() {
+                                  enr = false;
+                                  yeux = value??0;
+                                });
+                              },
+                            ),
+                          ),
+                          ListTile(
+                            title: const Text('2. à la douleur'),
+                            leading: Radio<int>(
+                              value: 2,
+                              groupValue: yeux,
+                              toggleable: true,
+                              onChanged: (int? value) {
+                                setState(() {
+                                  enr = false;
+                                  yeux = value??0;
+                                });
+                              },
+                            ),
+                          ),
+                          ListTile(
+                            title: const Text('1. aucune'),
+                            leading: Radio<int>(
+                              value: 1,
+                              groupValue: yeux,
+                              toggleable: true,
+                              onChanged: (int? value) {
+                                setState(() {
+                                  enr = false;
+                                  yeux = value??0;
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      ]),
+                    ExpansionTile(
+                        title: Row(
+                            children:[
+                              Icon(Icons.chat_bubble_outline),
+                              Text(" Réponse verbale", style: TextStyle(fontWeight: FontWeight.bold))]),
+                        textColor: Colors.green[100],
+                        collapsedTextColor: Colors.black,
+                        collapsedBackgroundColor: Colors.green[100],
+                        iconColor: Colors.black,
+                        children: <Widget>[
+                          Column(
+                            children: [
+                              ListTile(
+                                title: const Text('5. orienté'),
+                                leading: Radio<int>(
+                                  value: 5,
+                                  groupValue: verbale,
+                                  toggleable: true,
+                                  onChanged: (int? value) {
+                                    setState(() {
+                                      enr = false;
+                                      verbale = value??0;
+                                    });
+                                  },
+                                ),
+                              ),
+                              ListTile(
+                                title: const Text('4. confuse'),
+                                leading: Radio<int>(
+                                  value: 4,
+                                  groupValue: verbale,
+                                  toggleable: true,
+                                  onChanged: (int? value) {
+                                    setState(() {
+                                      enr = false;
+                                      verbale = value??0;
+                                    });
+                                  },
+                                ),
+                              ),
+                              ListTile(
+                                title: const Text('3. inapropriée'),
+                                leading: Radio<int>(
+                                  value: 3,
+                                  groupValue: verbale,
+                                  toggleable: true,
+                                  onChanged: (int? value) {
+                                    setState(() {
+                                      enr = false;
+                                      verbale = value??0;
+                                    });
+                                  },
+                                ),
+                              ),
+                              ListTile(
+                                title: const Text('2. incompréhensible'),
+                                leading: Radio<int>(
+                                  value: 2,
+                                  groupValue: verbale,
+                                  toggleable: true,
+                                  onChanged: (int? value) {
+                                    setState(() {
+                                      enr = false;
+                                      verbale = value??0;
+                                    });
+                                  },
+                                ),
+                              ),
+                              ListTile(
+                                title: const Text('1. aucune'),
+                                leading: Radio<int>(
+                                  value: 1,
+                                  groupValue: verbale,
+                                  toggleable: true,
+                                  onChanged: (int? value) {
+                                    setState(() {
+                                      enr = false;
+                                      verbale = value??0;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ]),
+                    ExpansionTile(
+                        title: Row(
+                            children:[
+                              Icon(Icons.back_hand),
+                              Text(" Réponse motrice", style: TextStyle(fontWeight: FontWeight.bold))]),
+                        textColor: Colors.green[100],
+                        collapsedTextColor: Colors.black,
+                        collapsedBackgroundColor: Colors.green[100],
+                        iconColor: Colors.black,
+                        children: <Widget>[
+                          Column(
+                            children: [
+                              ListTile(
+                                title: const Text('6. à la demande'),
+                                leading: Radio<int>(
+                                  value: 6,
+                                  groupValue: motrice,
+                                  toggleable: true,
+                                  onChanged: (int? value) {
+                                    setState(() {
+                                      enr = false;
+                                      motrice = value??0;
+                                    });
+                                  },
+                                ),
+                              ),
+                              ListTile(
+                                title: const Text('5. orienté à la douleur'),
+                                leading: Radio<int>(
+                                  value: 5,
+                                  groupValue: motrice,
+                                  toggleable: true,
+                                  onChanged: (int? value) {
+                                    setState(() {
+                                      enr = false;
+                                      motrice = value??0;
+                                    });
+                                  },
+                                ),
+                              ),
+                              ListTile(
+                                title: const Text('4. évitement non adapté'),
+                                leading: Radio<int>(
+                                  value: 4,
+                                  groupValue: motrice,
+                                  toggleable: true,
+                                  onChanged: (int? value) {
+                                    setState(() {
+                                      enr = false;
+                                      motrice = value??0;
+                                    });
+                                  },
+                                ),
+                              ),
+                              ListTile(
+                                title: const Text('3. décortication'),
+                                subtitle: const Text("Bras vers l'intérieur"),
+                                leading: Radio<int>(
+                                  value: 3,
+                                  groupValue: motrice,
+                                  toggleable: true,
+                                  onChanged: (int? value) {
+                                    setState(() {
+                                      enr = false;
+                                      motrice = value??0;
+                                    });
+                                  },
+                                ),
+                              ),
+                              ListTile(
+                                title: const Text('2. décérébration'),
+                                subtitle: const Text("Bras rigide, mains vers l'extérieur"),
+                                leading: Radio<int>(
+                                  value: 2,
+                                  groupValue: motrice,
+                                  toggleable: true,
+                                  onChanged: (int? value) {
+                                    setState(() {
+                                      enr = false;
+                                      motrice = value??0;
+                                    });
+                                  },
+                                ),
+                              ),
+                              ListTile(
+                                title: const Text('1. décortication'),
+                                leading: Radio<int>(
+                                  value: 1,
+                                  groupValue: motrice,
+                                  toggleable: true,
+                                  onChanged: (int? value) {
+                                    setState(() {
+                                      enr = false;
+                                      motrice = value??0;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ]),
+                    Visibility(
+                      visible: (yeux*verbale*motrice>0)?true:false,
+                        child:Padding(padding: const EdgeInsets.all(4),child:
+                        RichText(
+                          text: TextSpan(
+                            style: TextStyle(color: Colors.black),
+                            children: <TextSpan>[
+                              TextSpan(text:"Score: ", style: TextStyle(fontWeight: FontWeight.bold)),
+                              TextSpan(text:'${yeux+verbale+motrice}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: couleurs[(yeux+verbale+motrice>12?0:yeux+verbale+motrice>8?1:2)]) ),
+                            ],
+                          ),
+                        )
+                        )
+                    ),
                   ]),
             ],
           ),
-          Column(
-            children: [
-            Row(
-            children: const <Widget>[
-              Expanded(
-              child: Divider()
-              ),
-              Text("Position"),
-              Expanded(
-              child: Divider()
-              ),
-              ]),
+          ExpansionTile(
+            title: Row(
+                children: const <Widget>[
+                  Expanded(
+                      child: Divider()
+                  ),
+                  Text("Position"),
+                  Expanded(
+                      child: Divider()
+                  ),
+                ]),
+
+            collapsedTextColor: Colors.black,
+            collapsedBackgroundColor: Colors.grey[200],
+            iconColor: Colors.black,
+            children: <Widget>[
               ListTile(
                 title: const Text('Allongée'),
                 leading: Radio<int>(
@@ -1379,4 +1936,5 @@ class _VitalState extends State<Vital> {
   }
 
   //TODO:vérifier enregistrement pour les radios group
+  //TODO:score de Glasgow
 }

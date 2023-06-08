@@ -2,10 +2,13 @@ import 'package:app_secours/Officiant.dart';
 import 'package:app_secours/circonstanciel.dart';
 import 'package:app_secours/declenchement.dart';
 import 'package:app_secours/identite.dart';
+import 'package:app_secours/responsabilites.dart';
+import 'package:app_secours/surveillance.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
 import 'Vital.dart';
+import 'complementaire.dart';
 import 'main.dart';
 
 class Menu extends StatefulWidget {
@@ -27,7 +30,8 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
     'Identité',
     'Vital',
     'Complémentaire',
-    'Surveillance'
+    'Surveillance',
+    'Responsabilité'
   ];
   static const _iconMenu = [
     Icons.crisis_alert_outlined,
@@ -36,6 +40,7 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
     Icons.medical_information,
     Icons.perm_device_info,
     Icons.safety_check,
+    Icons.family_restroom
   ];
   static const _colorMenu = [
     Colors.blue,
@@ -43,7 +48,8 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
     Colors.blueAccent,
     Colors.red,
     Colors.grey,
-    Colors.orange
+    Colors.orange,
+    Colors.green,
   ];
 
   static var _classes = [
@@ -51,8 +57,9 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
     Circonstanciel(chemin: ""),
     Identite(chemin: ""),
     Vital(chemin: ""),
-    Circonstanciel(chemin: ""),
-    Circonstanciel(chemin: ""),
+    Complementaire(chemin: ""),
+    Surveillance(chemin: ""),
+    Responsabilites(chemin: ""),
   ];
 
   static const _initialDelayTime = Duration(milliseconds: 50);
@@ -84,8 +91,9 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
       Circonstanciel(chemin: widget.chemin),
       Identite(chemin: widget.chemin),
       Vital(chemin: widget.chemin),
-      Circonstanciel(chemin: widget.chemin),
-      Circonstanciel(chemin: widget.chemin),
+      Complementaire(chemin: widget.chemin),
+      Surveillance(chemin: widget.chemin),
+      Responsabilites(chemin: widget.chemin),
     ];
   }
 
