@@ -302,18 +302,19 @@ class _DeclenchementState extends State<Declenchement> {
 
   litFichier()async{
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
+    print((doc.form.fields[0] as PdfTextBoxField).name);
     setState(() {
-      dispositif.text = (doc.form.fields[120] as PdfTextBoxField).text;
-      numeros.text = (doc.form.fields[121] as PdfTextBoxField).text;
-      equipe.text = (doc.form.fields[122] as PdfTextBoxField).text;
-      date.text = (doc.form.fields[123] as PdfTextBoxField).text;
-      heure.text = (doc.form.fields[124] as PdfTextBoxField).text;
-      num_dispositif.text =(doc.form.fields[125] as PdfTextBoxField).text;
-      motif.text = (doc.form.fields[126] as PdfTextBoxField).text;
-      adresse.text = (doc.form.fields[127] as PdfTextBoxField).text;
-      depart_equipe.text = (doc.form.fields[128] as PdfTextBoxField).text;
-      heure_depart.text = (doc.form.fields[129] as PdfTextBoxField).text;
-      sur_lieux.text = (doc.form.fields[130] as PdfTextBoxField).text;
+      dispositif.text = (doc.form.fields[0] as PdfTextBoxField).text;
+      numeros.text = (doc.form.fields[1] as PdfTextBoxField).text;
+      equipe.text = (doc.form.fields[2] as PdfTextBoxField).text;
+      date.text = (doc.form.fields[3] as PdfTextBoxField).text;
+      heure.text = (doc.form.fields[4] as PdfTextBoxField).text;
+      num_dispositif.text =(doc.form.fields[5] as PdfTextBoxField).text;
+      motif.text = (doc.form.fields[6] as PdfTextBoxField).text;
+      adresse.text = (doc.form.fields[7] as PdfTextBoxField).text;
+      depart_equipe.text = (doc.form.fields[8] as PdfTextBoxField).text;
+      heure_depart.text = (doc.form.fields[9] as PdfTextBoxField).text;
+      sur_lieux.text = (doc.form.fields[10] as PdfTextBoxField).text;
     });
     setState(() {
       future = "ok";
@@ -323,17 +324,17 @@ class _DeclenchementState extends State<Declenchement> {
   metChampsAJour() async {
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
     for (var x = 0; x<doc.form.fields.count; x++)print(doc.form.fields[x].name);
-    (doc.form.fields[120] as PdfTextBoxField).text = dispositif.text;
-    (doc.form.fields[121] as PdfTextBoxField).text = numeros.text;
-    (doc.form.fields[122] as PdfTextBoxField).text = equipe.text;
-    (doc.form.fields[123] as PdfTextBoxField).text = date.text;
-    (doc.form.fields[124] as PdfTextBoxField).text = heure.text;
-    (doc.form.fields[125] as PdfTextBoxField).text = num_dispositif.text;
-    (doc.form.fields[126] as PdfTextBoxField).text = motif.text;
-    (doc.form.fields[127] as PdfTextBoxField).text = adresse.text;
-    (doc.form.fields[128] as PdfTextBoxField).text = depart_equipe.text;
-    (doc.form.fields[129] as PdfTextBoxField).text = heure_depart.text;
-    (doc.form.fields[130] as PdfTextBoxField).text = sur_lieux.text;
+    (doc.form.fields[0] as PdfTextBoxField).text = dispositif.text;
+    (doc.form.fields[1] as PdfTextBoxField).text = numeros.text;
+    (doc.form.fields[2] as PdfTextBoxField).text = equipe.text;
+    (doc.form.fields[3] as PdfTextBoxField).text = date.text;
+    (doc.form.fields[4] as PdfTextBoxField).text = heure.text;
+    (doc.form.fields[5] as PdfTextBoxField).text = num_dispositif.text;
+    (doc.form.fields[6] as PdfTextBoxField).text = motif.text;
+    (doc.form.fields[7] as PdfTextBoxField).text = adresse.text;
+    (doc.form.fields[8] as PdfTextBoxField).text = depart_equipe.text;
+    (doc.form.fields[9] as PdfTextBoxField).text = heure_depart.text;
+    (doc.form.fields[10] as PdfTextBoxField).text = sur_lieux.text;
     if(await enregistre()){
       Officiant().enregistreFichier(widget.chemin, doc).then((value) => {
         if (value)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistré !"),))

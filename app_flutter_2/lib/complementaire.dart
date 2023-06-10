@@ -22,6 +22,7 @@ class _ComplementaireState extends State<Complementaire> {
   String future = "";
 
   List<Offset> _pointOffset = List.generate(8, (index) => Offset(0, 0));
+  List<String> type_blessure = List.generate(8, (index) => "FC");
   late PointMarkerPainter peinture;
 
   //etat physique
@@ -904,11 +905,10 @@ class _ComplementaireState extends State<Complementaire> {
                 // Mettre à jour les coordonnées du point lors du tap sur l'image
                 setState(() {
                   _pointOffset[index] = details.localPosition;
-                  print(_pointOffset);
                   peinture.modif(_pointOffset[index]);
                 });
               },
-              child:Stack(
+              child:Column(children:[Stack(
                 children:[
                   Image.asset('assets/physique.png'),
                   Positioned.fill(child:CustomPaint(
@@ -916,17 +916,30 @@ class _ComplementaireState extends State<Complementaire> {
                     child: Container(),
                   ),),
                 ]
-              ), /*Container(
-                width: 300,
-                height: 300,
-                child: CustomPaint(
-                  painter: peinture,
-                  child: Image.asset(
-                    'assets/physique.png', // Chemin de l'image dans les assets
-                    fit: BoxFit.contain,
+              ),
+                Padding(padding:const EdgeInsets.all(4),child: DropdownButton<String>(
+                  value: type_blessure[index],
+                  elevation: 16,
+                  style: const TextStyle(color: Colors.deepPurple),
+                  underline: Container(
+                    height: 2,
+                    color: Colors.deepPurpleAccent,
                   ),
-                ),
-              ),*/
+                  onChanged: (String? value) {
+                    // This is called when the user selects an item.
+                    setState(() {
+                      enr = false;
+                      type_blessure[index] = value!;
+                    });
+                  },
+                  items: <String>[" ","FO: Fracture Ouverte","FF: Fracture Fermée","DL: Douleur","DE: Déformation","B: Brûlure","H: Hémorragie","P"].map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                ))
+            ]),
             ),
             actions: <Widget>[
               TextButton(
