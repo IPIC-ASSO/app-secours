@@ -1,5 +1,7 @@
+import 'package:app_secours/charge.dart';
 import 'package:app_secours/menu.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 import 'Officiant.dart';
@@ -14,18 +16,24 @@ class Circonstanciel extends StatefulWidget {
   State<Circonstanciel> createState() => _CirconstancielState();
 }
 
-class _CirconstancielState extends State<Circonstanciel> {
+class _CirconstancielState extends State<Circonstanciel> with TickerProviderStateMixin {
 
+  late AnimationController _controller;
+  late final SharedPreferences prefs;
   bool enr = true;
   String future = "";
-  DateTime selectedDate = DateTime.now();
   bool supr = false;
   bool balise = false;
   bool degage = false;
   bool equ_secu = false;
   bool renforts = false;
   bool SMV = false;
+  TextEditingController implique  = TextEditingController();
+  TextEditingController UR  = TextEditingController();
+  TextEditingController UA  = TextEditingController();
+  TextEditingController decede  = TextEditingController();
   bool moyens = false;
+  TextEditingController moyens_suffisants  = TextEditingController();
   TextEditingController securite  = TextEditingController();
   TextEditingController scene  = TextEditingController();
   TextEditingController quepasta  = TextEditingController();
@@ -36,6 +44,18 @@ class _CirconstancielState extends State<Circonstanciel> {
   void initState() {
     litFichier();
     super.initState();
+    _controller = AnimationController(
+        duration: const Duration(milliseconds: 2000), vsync: this)
+      ..addStatusListener((status) {
+        if(status == AnimationStatus.completed)_controller.reverse();
+        else if(status == AnimationStatus.dismissed)_controller.forward();})
+      ..forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -70,7 +90,7 @@ class _CirconstancielState extends State<Circonstanciel> {
                   controller: securite,
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
-                    labelText: 'Securité, danger(s) persistant(s)',
+                    labelText: 'Sécurité, danger(s) persistant(s)',
                   ),
                 )),
                 Row(
@@ -90,18 +110,18 @@ class _CirconstancielState extends State<Circonstanciel> {
                         ),
                     ),
                     Flexible(child:
-                    CheckboxListTile(
-                      title: const Text("Balisé"),
-                      contentPadding: const EdgeInsets.all(0),
-                      value: balise,
-                      onChanged: (vla) {
-                        setState(() {
-                          enr = false;
-                          balise = vla??false;
-                        });
-                      },
-                      controlAffinity: ListTileControlAffinity.leading,  //  <-- leading Checkbox
-                    ),
+                      CheckboxListTile(
+                        title: const Text("Balisé"),
+                        contentPadding: const EdgeInsets.all(0),
+                        value: balise,
+                        onChanged: (vla) {
+                          setState(() {
+                            enr = false;
+                            balise = vla??false;
+                          });
+                        },
+                        controlAffinity: ListTileControlAffinity.leading,  //  <-- leading Checkbox
+                      ),
                     ),
                     Flexible(child:
                     CheckboxListTile(
@@ -175,7 +195,7 @@ class _CirconstancielState extends State<Circonstanciel> {
                   ),
                 )),
                 CheckboxListTile(
-                  title: const Text("Renforts SMV pour:"),
+                  title: const Text("Renforts SMV"),
                   contentPadding: const EdgeInsets.all(0),
                   value: SMV,
                   onChanged: (vla) {
@@ -185,6 +205,80 @@ class _CirconstancielState extends State<Circonstanciel> {
                     });
                   },
                   controlAffinity: ListTileControlAffinity.leading,  //  <-- leading Checkbox
+                ),
+                Visibility(
+                  visible: SMV,
+                  child:
+                    Column(children: [
+                      Row(children: <Widget>[
+                        Flexible(flex: 1,child:
+                        SizedBox(
+                            width: 1000,
+                            child:Padding(padding:const EdgeInsets.all(4),child: TextField(
+                              onChanged: (text){setState(() {
+                                enr = false;
+                              }); },
+                              controller: implique,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.green)),
+                                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.green)),
+                                labelText: 'IMPLIQUES',
+                              ),
+                            ))
+                        ), ),
+                        Flexible(flex: 1,child:
+                        SizedBox(
+                            width: 1000,
+                            child:Padding(padding:const EdgeInsets.all(4),child: TextField(
+                              onChanged: (text){setState(() {
+                                enr = false;
+                              }); },
+                              controller: UR,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.yellow)),
+                                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.yellow)),
+                                labelText: 'UR',
+                              ),
+                            ))
+                        ), ),
+                      ],),
+                      Row(children: <Widget>[
+                        Flexible(flex: 1,child:
+                        SizedBox(
+                            width: 1000,
+                            child:Padding(padding:const EdgeInsets.all(4),child: TextField(
+                              onChanged: (text){setState(() {
+                                enr = false;
+                              }); },
+                              controller: UA,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.red)),
+                                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.red)),
+                                labelText: 'UA',
+                              ),
+                            ))
+                        ), ),
+                        Flexible(flex: 1,child:
+                        SizedBox(
+                            width: 1000,
+                            child:Padding(padding:const EdgeInsets.all(4),child: TextField(
+                              onChanged: (text){setState(() {
+                                enr = false;
+                              }); },
+                              controller: decede,
+                              keyboardType: TextInputType.number,
+                              decoration: const InputDecoration(
+                                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.black)),
+                                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.black)),
+                                labelText: 'DECEDES',
+                              ),
+                            ))
+                        ), ),
+                      ],),
+                    ],)
                 ),
                 Padding(padding:const EdgeInsets.all(4),child: TextField(
                   onChanged: (text){setState(() {
@@ -197,7 +291,7 @@ class _CirconstancielState extends State<Circonstanciel> {
                   ),
                 )),
                 CheckboxListTile(
-                  title: const Text("Moyen suffisants OU renforts"),
+                  title: const Text("Moyens suffisants OU renforts"),
                   contentPadding: const EdgeInsets.all(0),
                   value: moyens,
                   onChanged: (vla) {
@@ -208,43 +302,43 @@ class _CirconstancielState extends State<Circonstanciel> {
                   },
                   controlAffinity: ListTileControlAffinity.leading,  //  <-- leading Checkbox
                 ),
-                Flexible(
-                  flex: 1,
-                  child:
-                SizedBox(
-                    width: 1000,
-                    child:Padding(padding:const EdgeInsets.all(4),child: TextField(
-                      onChanged: (text){setState(() {
-                        enr = false;
-                      }); },
-                      controller: heure,
-                      readOnly: true,  // when true user cannot edit text
-                      onTap: () async {
-                        await displayTimePicker(context, heure);
-                      },
-                      keyboardType: TextInputType.number,
-                      decoration: const InputDecoration(
-                        border: OutlineInputBorder(),
-                        labelText: 'heure',
-                      ),
-                    ))
-                ),),
+                Padding(padding:const EdgeInsets.all(4),child: TextField(
+                  onChanged: (text){setState(() {
+                    enr = false;
+                  }); },
+                  controller: moyens_suffisants,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: 'moyens/renforts',
+                  ),
+                )),
+                Padding(padding:const EdgeInsets.all(4),child: TextField(
+                  onChanged: (text){setState(() {
+                    enr = false;
+                  }); },
+                  controller: heure,
+                  readOnly: true,  // when true user cannot edit text
+                  onTap: () async {
+                    await displayTimePicker(context, heure);
+                  },
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: 'heure de transmission',
+                  ),
+                ))
               ]
           ));
     }else{
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const <Widget>[
-            SizedBox(
-              width: 60,
-              height: 60,
-              child: CircularProgressIndicator(),
-            ),
-            Padding(
+          children: <Widget>[
+            const Padding(
               padding: EdgeInsets.only(top: 16),
               child: Text('Chargement...'),
             ),
+            Chargement(controller: _controller)
           ],
         ),
       );
@@ -265,31 +359,32 @@ class _CirconstancielState extends State<Circonstanciel> {
 
     if (time != null) {
       setState(() {
-        heureC.text = "${time.hour}:${time.minute}";
+        heureC.text = time.format(context);
       });
     }
   }
 
-  Future<String> litFichier2()async{
-    //Isolate.spawn(litFichier,"ok");
-    return ("ok");
-  }
-
   litFichier()async{
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
+    prefs = await SharedPreferences.getInstance();
     setState(() {
-      securite.text = (doc.form.fields[11] as PdfTextBoxField).text;
-      //supr = (doc.form.fields[12] as PdfCheckBoxField).isChecked;
-      //balise = (doc.form.fields[13] as PdfCheckBoxField).isChecked;
-      //degage = (doc.form.fields[14] as PdfCheckBoxField).isChecked;
-      //equ_secu = (doc.form.fields[15] as PdfCheckBoxField).isChecked;
-      //renforts = (doc.form.fields[16] as PdfCheckBoxField).isChecked;
-      scene.text = (doc.form.fields[17] as PdfTextBoxField).text;
-      quepasta.text = (doc.form.fields[18] as PdfTextBoxField).text;
-      //SMV = (doc.form.fields[19] as PdfCheckBoxField).isChecked;
-      plainte.text = (doc.form.fields[20] as PdfTextBoxField).text;
-      //moyens = (doc.form.fields[21] as PdfCheckBoxField).isChecked;
-      heure.text = (doc.form.fields[22] as PdfTextBoxField).text;
+      securite.text = (doc.form.fields[prefs.getInt("danger")??0] as PdfTextBoxField).text;
+      supr = (doc.form.fields[prefs.getInt("supprime")??0] as PdfCheckBoxField).isChecked;
+      balise = (doc.form.fields[prefs.getInt("balise")??0] as PdfCheckBoxField).isChecked;
+      degage = (doc.form.fields[prefs.getInt("degagement_urg")??0] as PdfCheckBoxField).isChecked;
+      equ_secu = (doc.form.fields[prefs.getInt("equipe_secu")??0] as PdfCheckBoxField).isChecked;
+      renforts = (doc.form.fields[prefs.getInt("renforts")??0] as PdfCheckBoxField).isChecked;
+      scene.text = (doc.form.fields[prefs.getInt("scene")??0] as PdfTextBoxField).text;
+      quepasta.text = (doc.form.fields[prefs.getInt("que_pasta")??0] as PdfTextBoxField).text;
+      SMV = (doc.form.fields[prefs.getInt("renforts_SMV")??0] as PdfCheckBoxField).isChecked;
+      implique.text  = (doc.form.fields[prefs.getInt("implique")??0] as PdfTextBoxField).text;
+      UR.text  = (doc.form.fields[prefs.getInt("UR")??0] as PdfTextBoxField).text;
+      UA.text  = (doc.form.fields[prefs.getInt("UA")??0] as PdfTextBoxField).text;
+      decede.text = (doc.form.fields[prefs.getInt("decede")??0] as PdfTextBoxField).text;
+      plainte.text = (doc.form.fields[prefs.getInt("plainte")??0] as PdfTextBoxField).text;
+      moyens = (doc.form.fields[prefs.getInt("suffisant")??0] as PdfCheckBoxField).isChecked;
+      moyens_suffisants.text = (doc.form.fields[prefs.getInt("moyens_renforts")??0] as PdfTextBoxField).text;
+      heure.text = (doc.form.fields[prefs.getInt("heure_transmis")??0] as PdfTextBoxField).text;
     });
     setState(() {
       future = "ok";
@@ -298,62 +393,31 @@ class _CirconstancielState extends State<Circonstanciel> {
 
   metChampsAJour() async {
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
-    (doc.form.fields[0] as PdfTextBoxField).text = securite.text;
-    (doc.form.fields[1] as PdfCheckBoxField).isChecked = supr;
-    (doc.form.fields[2] as PdfCheckBoxField).isChecked = balise;
-    (doc.form.fields[3] as PdfCheckBoxField).isChecked = degage;
-    (doc.form.fields[4] as PdfCheckBoxField).isChecked = equ_secu;
-    (doc.form.fields[5] as PdfCheckBoxField).isChecked = renforts;
-    (doc.form.fields[6] as PdfTextBoxField).text = scene.text;
-    (doc.form.fields[7] as PdfTextBoxField).text = quepasta.text;
-    (doc.form.fields[5] as PdfCheckBoxField).isChecked = SMV;
-    (doc.form.fields[9] as PdfTextBoxField).text = plainte.text;
-    (doc.form.fields[5] as PdfCheckBoxField).isChecked = moyens;
-    (doc.form.fields[8] as PdfTextBoxField).text = heure.text;
-    if(await enregistre()){
-      Officiant().enregistreFichier(widget.chemin, doc).then((value) => {
-        if (value)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistré !"),))
-        else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Une erreur est survenue :/"),))
-      });
-    }
+    (doc.form.fields[prefs.getInt("danger")??0] as PdfTextBoxField).text = securite.text;
+    (doc.form.fields[prefs.getInt("supprime")??0] as PdfCheckBoxField).isChecked = supr;
+    (doc.form.fields[prefs.getInt("balise")??0] as PdfCheckBoxField).isChecked = balise;
+    (doc.form.fields[prefs.getInt("degagement_urg")??0] as PdfCheckBoxField).isChecked = degage;
+    (doc.form.fields[prefs.getInt("equipe_secu")??0] as PdfCheckBoxField).isChecked = equ_secu;
+    (doc.form.fields[prefs.getInt("renforts")??0] as PdfCheckBoxField).isChecked = renforts;
+    (doc.form.fields[prefs.getInt("scene")??0] as PdfTextBoxField).text = scene.text;
+    (doc.form.fields[prefs.getInt("que_pasta")??0] as PdfTextBoxField).text = quepasta.text;
+    (doc.form.fields[prefs.getInt("renforts_SMV")??0] as PdfCheckBoxField).isChecked = SMV;
+    (doc.form.fields[prefs.getInt("implique")??0] as PdfTextBoxField).text = implique.text;
+    (doc.form.fields[prefs.getInt("UR")??0] as PdfTextBoxField).text = UR.text;
+    (doc.form.fields[prefs.getInt("UA")??0] as PdfTextBoxField).text = UA.text;
+    (doc.form.fields[prefs.getInt("decede")??0] as PdfTextBoxField).text = decede.text;
+    (doc.form.fields[prefs.getInt("plainte")??0] as PdfTextBoxField).text = plainte.text;
+    (doc.form.fields[prefs.getInt("suffisant")??0] as PdfCheckBoxField).isChecked = moyens;
+    (doc.form.fields[prefs.getInt("moyens_renforts")??0] as PdfTextBoxField).text = moyens_suffisants.text;
+    (doc.form.fields[prefs.getInt("heure_transmis")??0] as PdfTextBoxField).text = heure.text;
+
+    Officiant().enregistreFichier(widget.chemin, doc).then((value) => {
+      if (value)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistré !"),))
+      else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Une erreur est survenue :/"),))
+    });
     setState(() {
       enr = true;
     });
   }
 
-  Future<bool>enregistre()async{
-    if (widget.chemin == ""){
-      TextEditingController nomPdf = TextEditingController();
-      await showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('Enregistrer'),
-            content: ListView(shrinkWrap:true,children: [
-              const Padding(padding: EdgeInsets.all(5),
-                  child:Text('Comment souhaitez vous appeler le pdf?')),
-              TextField(
-                controller: nomPdf,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'nom',
-                ),
-              )
-            ]),
-            actions: <Widget>[
-              ElevatedButton(
-                  onPressed: () async {
-                    String x = await Officiant().nouveauChemin(nomPdf.text);
-                    if (x =="0"){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Un fichier du même nom existe déjà"),));return;};
-                    if( x == "1")ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistrement impossible"),));
-                    if (x!="1"&& x!="0")widget.chemin = x;
-                    Navigator.pop(_);
-                  },
-                  child: const Text('Enregistrer')),
-            ],
-            elevation: 24,
-          ),
-          barrierDismissible: false);
-    }
-    return true;
-  }
 }

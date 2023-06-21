@@ -1,8 +1,10 @@
+import 'package:app_secours/charge.dart';
 import 'package:app_secours/menu.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_xlider/flutter_xlider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'Officiant.dart';
+import 'dart:math'as m;
 
 class Vital extends StatefulWidget {
 
@@ -14,13 +16,12 @@ class Vital extends StatefulWidget {
   State<Vital> createState() => _VitalState();
 }
 
-class _VitalState extends State<Vital> {
-
-  //VITAL 1
-  bool montre_1 = false;
-  bool montre_2 = false;
-  bool montre_3 = false;
+class _VitalState extends State<Vital> with TickerProviderStateMixin {
+  late AnimationController _controller;
+  late final SharedPreferences prefs;
+  late PdfDocument doc;
   bool enr = true;
+  //VITAL 1
   String future = "";
   bool arreter = false;
   bool pansement_imb = false;
@@ -36,17 +37,20 @@ class _VitalState extends State<Vital> {
   bool elevation_menton = false;
   bool LVA = false;
   bool neutre = false;
-  int respiration = -1;
+  int respiration = 0;
   bool insufl = false;
   bool aspi = false;
-  int circulation = -1;
+  int circulation = 0;
   bool massage = false;
   bool DAE = false;
   TextEditingController heure_choc1  = TextEditingController();
   TextEditingController heure_choc2  = TextEditingController();
   TextEditingController heure_choc3  = TextEditingController();
   TextEditingController heure_choc4  = TextEditingController();
-  int neurologique = -1;
+  bool ouvre_y = false;
+  bool reponse_v = false;
+  bool reponse_m = false;
+
   bool PLS = false;
   //VITAL 2
   bool liberation = false;
@@ -59,14 +63,15 @@ class _VitalState extends State<Vital> {
   TextEditingController pauses  = TextEditingController();
   TextEditingController saturation  = TextEditingController();
   bool ambiant = false;
-  int type_respiration = -1;
+  int type_respiration = 0;
   TextEditingController bat_frequence  = TextEditingController();
   TextEditingController amplitude  = TextEditingController();
   TextEditingController tension  = TextEditingController();
   TextEditingController tension_habituelle  = TextEditingController();
   bool repos = false;
   bool recolore = false;
-  int pupilles_egales = -1;
+  TextEditingController oxy  = TextEditingController();
+  int pupilles_egales = 0;
   bool areactives_G = false;
   bool areactives_D = false;
   bool dilatees_G = false;
@@ -85,17 +90,28 @@ class _VitalState extends State<Vital> {
   int verbale = 0;
   int motrice = 0;
   List<Color> couleurs = [Colors.green,Colors.orange,Colors.red];
-
-
   //autre
-  int position = -1;
+  int position = 0;
   TextEditingController position_cplx  = TextEditingController();
 
 
   @override
   void initState() {
     litFichier();
+    _controller = AnimationController(
+        duration: const Duration(milliseconds: 2000), vsync: this)
+      ..addStatusListener((status) {
+        if(status == AnimationStatus.completed)_controller.reverse();
+        else if(status == AnimationStatus.dismissed)_controller.forward();})
+      ..forward();
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    doc.dispose();
+    super.dispose();
   }
 
   @override
@@ -186,6 +202,20 @@ class _VitalState extends State<Vital> {
                       onChanged: (vla) {
                         setState(() {
                           enr = false;
+                          rechauffe = vla??false;
+                        });
+                      },
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 25),
+                    child: CheckboxListTile(
+                      title: const Text("Allonger", softWrap: true,),
+                      contentPadding: const EdgeInsets.all(0),
+                      value: allonge,
+                      onChanged: (vla) {
+                        setState(() {
+                          enr = false;
                           allonge = vla??false;
                         });
                       },
@@ -233,7 +263,7 @@ class _VitalState extends State<Vital> {
                   Padding(
                     padding: const EdgeInsets.only(left: 25),
                     child: CheckboxListTile(
-                      title: const Text("Compressions abdos/thorax", softWrap: true,),
+                      title: const Text("Compressions abdos/thorac.", softWrap: true,),
                       contentPadding: const EdgeInsets.all(0),
                       value: compression,
                       onChanged: (vla) {
@@ -343,7 +373,7 @@ class _VitalState extends State<Vital> {
                       leading: Radio<int>(
                         value: 0,
                         groupValue: respiration,
-                        toggleable: true,
+
                         onChanged: (int? value) {
                           setState(() {
                             respiration = value??-1;
@@ -356,8 +386,8 @@ class _VitalState extends State<Vital> {
                       title: const Text('Anormale'),
                       leading: Radio<int>(
                         value: 1,
+                        
                         groupValue: respiration,
-                        toggleable: true,
                         onChanged: (int? value) {
                           setState(() {
                             respiration = value??-1;
@@ -370,8 +400,8 @@ class _VitalState extends State<Vital> {
                       title: const Text('< 1 mvt/10s'),
                       leading: Radio<int>(
                         value: 2,
+                        
                         groupValue: respiration,
-                        toggleable: true,
                         onChanged: (int? value) {
                           setState(() {
                             respiration = value??-1;
@@ -383,7 +413,7 @@ class _VitalState extends State<Vital> {
                     Padding(
                       padding: const EdgeInsets.only(left: 25),
                       child: CheckboxListTile(
-                        title: const Text("Insuflations", softWrap: true,),
+                        title: const Text("Insufflations", softWrap: true,),
                         contentPadding: const EdgeInsets.all(0),
                         value: insufl,
                         onChanged: (vla) {
@@ -419,8 +449,8 @@ class _VitalState extends State<Vital> {
                       title: const Text('Pas de prise'),
                       leading: Radio<int>(
                         value: 0,
+                        
                         groupValue: circulation,
-                        toggleable: true,
                         onChanged: (int? value) {
                           setState(() {
                             enr = false;
@@ -433,8 +463,8 @@ class _VitalState extends State<Vital> {
                       title: const Text('Poul absent'),
                       leading: Radio<int>(
                         value: 1,
+                        
                         groupValue: circulation,
-                        toggleable: true,
                         onChanged: (int? value) {
                           setState(() {
                             circulation = value??-1;
@@ -446,8 +476,8 @@ class _VitalState extends State<Vital> {
                       title: const Text('Doute'),
                       leading: Radio<int>(
                         value: 2,
+                        
                         groupValue: circulation,
-                        toggleable: true,
                         onChanged: (int? value) {
                           setState(() {
                             enr = false;
@@ -523,8 +553,7 @@ class _VitalState extends State<Vital> {
                             ),
                           ))
                       ), ),
-                    ],
-                    ),
+                    ],),
                     Row(children: <Widget>[
                       Flexible(flex: 1,child:
                       SizedBox(
@@ -564,8 +593,7 @@ class _VitalState extends State<Vital> {
                             ),
                           ))
                       ), ),
-                    ],
-                    ),
+                    ],),
                   ]),
               ExpansionTile(
                   title: const Text('D Neurologique'),
@@ -582,13 +610,13 @@ class _VitalState extends State<Vital> {
                           children: [
                             Icon(
                               Icons.remove_red_eye_outlined,
-                              color: neurologique == 0 ? Colors.green : null,
+                              color: ouvre_y ? Colors.green : null,
                             ),
-                            Text("Ouvre les yeux", style: TextStyle(color: neurologique == 0 ? Colors.green : null)),
+                            Text("Ouvre les yeux", style: TextStyle(color: ouvre_y ? Colors.green : null)),
                           ],
                         ),
                         onTap: () => setState(() {
-                            neurologique !=0?neurologique=0:neurologique=-1;
+                            ouvre_y = !ouvre_y;
                           },
                         ),
                       ),
@@ -601,13 +629,13 @@ class _VitalState extends State<Vital> {
                           children: [
                             Icon(
                               Icons.chat,
-                              color: neurologique == 1 ? Colors.green : null,
+                              color: reponse_v? Colors.green : null,
                             ),
-                            Text("Réponse verbale", style: TextStyle(color: neurologique == 1 ? Colors.green : null)),
+                            Text("Réponse verbale", style: TextStyle(color: reponse_v ? Colors.green : null)),
                           ],
                         ),
                         onTap: () => setState(() {
-                          neurologique !=1?neurologique=1:neurologique=-1;
+                          reponse_v = !reponse_v;
                         },
                         ),
                       ),
@@ -620,13 +648,13 @@ class _VitalState extends State<Vital> {
                           children: [
                             Icon(
                               Icons.waving_hand,
-                              color: neurologique == 2 ? Colors.green : null,
+                              color: reponse_m ? Colors.green : null,
                             ),
-                            Text("Réponse motrice", style: TextStyle(color: neurologique == 2 ? Colors.green : null)),
+                            Text("Réponse motrice", style: TextStyle(color: reponse_m ? Colors.green : null)),
                           ],
                         ),
                         onTap: () => setState(() {
-                          neurologique !=2?neurologique=2:neurologique=-1;
+                          reponse_m = !reponse_m;
                         },
                         ),
                       ),
@@ -634,13 +662,13 @@ class _VitalState extends State<Vital> {
                     Padding(
                       padding: const EdgeInsets.only(left: 25),
                       child: CheckboxListTile(
-                        title: const Text("Massage cardiaque", softWrap: true,),
+                        title: const Text("Perte de connaissance -> PLS", softWrap: true,),
                         contentPadding: const EdgeInsets.all(0),
-                        value: massage,
+                        value: PLS,
                         onChanged: (vla) {
                           setState(() {
                             enr = false;
-                            massage = vla??false;
+                            PLS = vla??false;
                           });
                         },
                       ),
@@ -704,7 +732,8 @@ class _VitalState extends State<Vital> {
                       enr = false;
                     }); },
                     keyboardType: TextInputType.multiline,
-                    maxLines: null,
+                    maxLines: 3,
+                    maxLength: 160,
                     controller: signe_detresse_1,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
@@ -741,8 +770,9 @@ class _VitalState extends State<Vital> {
                         enr = false;
                       }); },
                       keyboardType: TextInputType.multiline,
-                      maxLines: null,
-                      controller: signe_detresse_1,
+                      maxLength: 160,
+                      maxLines: 3,
+                      controller: signe_detresse_2,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
                         labelText: 'Signes de détresse observés',
@@ -776,8 +806,9 @@ class _VitalState extends State<Vital> {
                         enr = false;
                       }); },
                       keyboardType: TextInputType.multiline,
-                      maxLines: null,
-                      controller: signe_detresse_1,
+                      maxLines: 3,
+                      maxLength: 160,
+                      controller: signe_detresse_3,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
                         labelText: 'Signes de détresse observés',
@@ -825,14 +856,13 @@ class _VitalState extends State<Vital> {
                       labelText: 'mvt/min (fréquence)',
                     ),
                   )),
-                  const Positioned(child: Align(
+                   const Align(
                     alignment: Alignment.centerLeft,
                     child:
-                  Padding(padding: EdgeInsets.all(4),child:
-                  Text("Adulte: 12 20 Enfant 20 30\nBébé 20 40 Nouv.né 40 60", style: TextStyle(fontStyle: FontStyle.italic))
+                    Padding(padding: EdgeInsets.all(4),child:
+                      Text("Adulte: 12 20 Enfant 20 30\nBébé 20 40 Nouv.né 40 60", style: TextStyle(fontStyle: FontStyle.italic))
                     ),
-                  )),
-
+                  ),
                   const Padding(padding: EdgeInsets.all(4),child:
                   Text("Indiquez les pauses > 6 secondes")
                   ),
@@ -903,7 +933,7 @@ class _VitalState extends State<Vital> {
                         leading: Radio<int>(
                           value: 0,
                           groupValue: type_respiration,
-                          toggleable: true,
+                          
                           onChanged: (int? value) {
                             setState(() {
                               enr = false;
@@ -918,7 +948,7 @@ class _VitalState extends State<Vital> {
                         leading: Radio<int>(
                           value: 1,
                           groupValue: type_respiration,
-                          toggleable: true,
+                          
                           onChanged: (int? value) {
                             setState(() {
                               enr = false;
@@ -933,7 +963,7 @@ class _VitalState extends State<Vital> {
                         leading: Radio<int>(
                           value: 2,
                           groupValue: type_respiration,
-                          toggleable: true,
+                          
                           onChanged: (int? value) {
                             setState(() {
                               enr = false;
@@ -948,7 +978,7 @@ class _VitalState extends State<Vital> {
                         leading: Radio<int>(
                           value: 3,
                           groupValue: type_respiration,
-                          toggleable: true,
+                          
                           onChanged: (int? value) {
                             setState(() {
                               enr = false;
@@ -979,14 +1009,13 @@ class _VitalState extends State<Vital> {
                         labelText: 'bat/min (fréquence)',
                       ),
                     )),
-                    const Positioned(child: Align(
+                     const Align(
                       alignment: Alignment.centerLeft,
                       child:
                       Padding(padding: EdgeInsets.all(4),child:
                       Text("Adulte: 60 100 Enfant 70 140\nBébé 100 160 Nouv.né 120 160", style: TextStyle(fontStyle: FontStyle.italic))
                       ),
-                    )),
-
+                    ),
                     const Padding(padding: EdgeInsets.all(4),child:
                     Text("radial -carotidien - huméral - fémoral")
                     ),
@@ -1004,9 +1033,13 @@ class _VitalState extends State<Vital> {
                     )),
                     Row(
                         children:[
-                          const Padding(padding: EdgeInsets.all(4),child:
-                          Text("mm de Hg *", style: TextStyle(fontWeight: FontWeight.bold),)
-                          ),
+                          const Expanded(flex: 1,child:
+                            SizedBox(
+                              width: 1000,
+                              child:Padding(padding: EdgeInsets.all(4),child:
+                                Text("mm de Hg *", style: TextStyle(fontWeight: FontWeight.bold),)
+                            ),
+                          )),
                           Expanded(flex: 1,child:
                           SizedBox(
                             width: 1000,
@@ -1027,13 +1060,13 @@ class _VitalState extends State<Vital> {
 
                         ]
                     ),
-                    const Positioned(child: Align(
+                    const Align(
                       alignment: Alignment.centerLeft,
                       child:
                       Padding(padding: EdgeInsets.all(4),child:
                       Text("* Grave : pression artérielle systolique (< à 90mm de Hg ou diminution de la PA habituelle de la victime hypertendu > à 30%)", style: TextStyle(fontStyle: FontStyle.italic))
                       ),
-                    )),
+                    ),
                     Row(children: <Widget>[
                       Flexible(flex: 1,child:
                       SizedBox(
@@ -1081,6 +1114,18 @@ class _VitalState extends State<Vital> {
                         },
                       ),
                     ),
+                    Padding(padding:const EdgeInsets.all(4),child: TextField(
+                      onChanged: (text){setState(() {
+                        enr = false;
+                      }); },
+                      controller: oxy,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.red)),
+                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.red)),
+                        labelText: 'O² (l/min)',
+                      ),
+                    ))
                   ]),
               ExpansionTile(
                   title: const Text('D'),
@@ -1106,8 +1151,8 @@ class _VitalState extends State<Vital> {
                           title: const Text('Egales'),
                           leading: Radio<int>(
                             value: 0,
+                            
                             groupValue: pupilles_egales,
-                            toggleable: true,
                             onChanged: (int? value) {
                               setState(() {
                                 pupilles_egales = value??-1;
@@ -1120,8 +1165,8 @@ class _VitalState extends State<Vital> {
                           title: const Text('Inégales'),
                           leading: Radio<int>(
                             value: 1,
+                            
                             groupValue: pupilles_egales,
-                            toggleable: true,
                             onChanged: (int? value) {
                               setState(() {
                                 pupilles_egales = value??-1;
@@ -1196,7 +1241,7 @@ class _VitalState extends State<Vital> {
                           child: CheckboxListTile(
                             controlAffinity: ListTileControlAffinity.leading,
                             title: const Text("D  dilatées", softWrap: true,),
-                            subtitle: Text("mydriase"),
+                            subtitle: const Text("mydriase"),
                             contentPadding: const EdgeInsets.all(0),
                             value: dilatees_D,
                             onChanged: (vla) {
@@ -1259,13 +1304,13 @@ class _VitalState extends State<Vital> {
                           ),
                         ]
                     ),
-                    const Positioned(child: Align(
+                    const Align(
                       alignment: Alignment.centerLeft,
                       child:
                       Padding(padding: EdgeInsets.all(4),child:
                       Text("Cocher les cases lorsque la sensimotrie fonctionne", style: TextStyle(fontStyle: FontStyle.italic))
                       ),
-                    )),
+                    ),
                     Row(children: <Widget>[
                       Expanded(flex: 1,child:
                       SizedBox(
@@ -1419,7 +1464,7 @@ class _VitalState extends State<Vital> {
                     ],
                     ),
                     Padding(
-                      padding: EdgeInsets.fromLTRB(3,5,3,10),
+                      padding: const EdgeInsets.fromLTRB(3,5,3,10),
                       child:
                     Row(
                         children: const <Widget>[
@@ -1434,7 +1479,7 @@ class _VitalState extends State<Vital> {
                     )),
                     ExpansionTile(
                     title: Row(
-                    children:[
+                    children:const [
                     Icon(Icons.remove_red_eye_outlined),
                     Text(" Ouvre les yeux", style: TextStyle(fontWeight: FontWeight.bold))]),
                     textColor: Colors.green[100],
@@ -1449,7 +1494,7 @@ class _VitalState extends State<Vital> {
                             leading: Radio<int>(
                               value: 4,
                               groupValue: yeux,
-                              toggleable: true,
+                              
                               onChanged: (int? value) {
                                 setState(() {
                                   enr = false;
@@ -1463,7 +1508,7 @@ class _VitalState extends State<Vital> {
                             leading: Radio<int>(
                               value: 3,
                               groupValue: yeux,
-                              toggleable: true,
+                              
                               onChanged: (int? value) {
                                 setState(() {
                                   enr = false;
@@ -1477,7 +1522,7 @@ class _VitalState extends State<Vital> {
                             leading: Radio<int>(
                               value: 2,
                               groupValue: yeux,
-                              toggleable: true,
+                              
                               onChanged: (int? value) {
                                 setState(() {
                                   enr = false;
@@ -1491,7 +1536,7 @@ class _VitalState extends State<Vital> {
                             leading: Radio<int>(
                               value: 1,
                               groupValue: yeux,
-                              toggleable: true,
+                              
                               onChanged: (int? value) {
                                 setState(() {
                                   enr = false;
@@ -1505,7 +1550,7 @@ class _VitalState extends State<Vital> {
                       ]),
                     ExpansionTile(
                         title: Row(
-                            children:[
+                            children:const [
                               Icon(Icons.chat_bubble_outline),
                               Text(" Réponse verbale", style: TextStyle(fontWeight: FontWeight.bold))]),
                         textColor: Colors.green[100],
@@ -1516,11 +1561,11 @@ class _VitalState extends State<Vital> {
                           Column(
                             children: [
                               ListTile(
-                                title: const Text('5. orienté'),
+                                title: const Text('5. orientée'),
                                 leading: Radio<int>(
                                   value: 5,
                                   groupValue: verbale,
-                                  toggleable: true,
+                                  
                                   onChanged: (int? value) {
                                     setState(() {
                                       enr = false;
@@ -1534,7 +1579,7 @@ class _VitalState extends State<Vital> {
                                 leading: Radio<int>(
                                   value: 4,
                                   groupValue: verbale,
-                                  toggleable: true,
+                                  
                                   onChanged: (int? value) {
                                     setState(() {
                                       enr = false;
@@ -1548,7 +1593,7 @@ class _VitalState extends State<Vital> {
                                 leading: Radio<int>(
                                   value: 3,
                                   groupValue: verbale,
-                                  toggleable: true,
+                                  
                                   onChanged: (int? value) {
                                     setState(() {
                                       enr = false;
@@ -1562,7 +1607,7 @@ class _VitalState extends State<Vital> {
                                 leading: Radio<int>(
                                   value: 2,
                                   groupValue: verbale,
-                                  toggleable: true,
+                                  
                                   onChanged: (int? value) {
                                     setState(() {
                                       enr = false;
@@ -1576,7 +1621,7 @@ class _VitalState extends State<Vital> {
                                 leading: Radio<int>(
                                   value: 1,
                                   groupValue: verbale,
-                                  toggleable: true,
+                                  
                                   onChanged: (int? value) {
                                     setState(() {
                                       enr = false;
@@ -1590,7 +1635,7 @@ class _VitalState extends State<Vital> {
                         ]),
                     ExpansionTile(
                         title: Row(
-                            children:[
+                            children:const [
                               Icon(Icons.back_hand),
                               Text(" Réponse motrice", style: TextStyle(fontWeight: FontWeight.bold))]),
                         textColor: Colors.green[100],
@@ -1605,7 +1650,7 @@ class _VitalState extends State<Vital> {
                                 leading: Radio<int>(
                                   value: 6,
                                   groupValue: motrice,
-                                  toggleable: true,
+                                  
                                   onChanged: (int? value) {
                                     setState(() {
                                       enr = false;
@@ -1619,7 +1664,7 @@ class _VitalState extends State<Vital> {
                                 leading: Radio<int>(
                                   value: 5,
                                   groupValue: motrice,
-                                  toggleable: true,
+                                  
                                   onChanged: (int? value) {
                                     setState(() {
                                       enr = false;
@@ -1633,7 +1678,7 @@ class _VitalState extends State<Vital> {
                                 leading: Radio<int>(
                                   value: 4,
                                   groupValue: motrice,
-                                  toggleable: true,
+                                  
                                   onChanged: (int? value) {
                                     setState(() {
                                       enr = false;
@@ -1648,7 +1693,7 @@ class _VitalState extends State<Vital> {
                                 leading: Radio<int>(
                                   value: 3,
                                   groupValue: motrice,
-                                  toggleable: true,
+                                  
                                   onChanged: (int? value) {
                                     setState(() {
                                       enr = false;
@@ -1663,7 +1708,7 @@ class _VitalState extends State<Vital> {
                                 leading: Radio<int>(
                                   value: 2,
                                   groupValue: motrice,
-                                  toggleable: true,
+                                  
                                   onChanged: (int? value) {
                                     setState(() {
                                       enr = false;
@@ -1677,7 +1722,7 @@ class _VitalState extends State<Vital> {
                                 leading: Radio<int>(
                                   value: 1,
                                   groupValue: motrice,
-                                  toggleable: true,
+                                  
                                   onChanged: (int? value) {
                                     setState(() {
                                       enr = false;
@@ -1694,9 +1739,9 @@ class _VitalState extends State<Vital> {
                         child:Padding(padding: const EdgeInsets.all(4),child:
                         RichText(
                           text: TextSpan(
-                            style: TextStyle(color: Colors.black),
+                            style: const TextStyle(color: Colors.black),
                             children: <TextSpan>[
-                              TextSpan(text:"Score: ", style: TextStyle(fontWeight: FontWeight.bold)),
+                              const TextSpan(text:"Score: ", style: TextStyle(fontWeight: FontWeight.bold)),
                               TextSpan(text:'${yeux+verbale+motrice}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: couleurs[(yeux+verbale+motrice>12?0:yeux+verbale+motrice>8?1:2)]) ),
                             ],
                           ),
@@ -1723,11 +1768,11 @@ class _VitalState extends State<Vital> {
             iconColor: Colors.black,
             children: <Widget>[
               ListTile(
-                title: const Text('Allongée'),
+                title: const Text('allongée'),
                 leading: Radio<int>(
                   value: 0,
                   groupValue: position,
-                  toggleable: true,
+                  
                   onChanged: (int? value) {
                     setState(() {
                       enr=false;
@@ -1740,8 +1785,8 @@ class _VitalState extends State<Vital> {
                 title: const Text('demi-assis'),
                 leading: Radio<int>(
                   value: 1,
+                  
                   groupValue: position,
-                  toggleable: true,
                   onChanged: (int? value) {
                     setState(() {
                       position = value??-1;
@@ -1754,8 +1799,8 @@ class _VitalState extends State<Vital> {
                 title: const Text('assis'),
                 leading: Radio<int>(
                   value: 2,
+                  
                   groupValue: position,
-                  toggleable: true,
                   onChanged: (int? value) {
                     setState(() {
                       position = value??-1;
@@ -1768,8 +1813,8 @@ class _VitalState extends State<Vital> {
                 title: const Text('allongée jambes relevées'),
                 leading: Radio<int>(
                   value: 3,
+                  
                   groupValue: position,
-                  toggleable: true,
                   onChanged: (int? value) {
                     setState(() {
                       position = value??-1;
@@ -1782,8 +1827,8 @@ class _VitalState extends State<Vital> {
                 title: const Text('autre:'),
                 leading: Radio<int>(
                   value: 4,
+                  
                   groupValue: position,
-                  toggleable: true,
                   onChanged: (int? value) {
                     setState(() {
                       position = value??-1;
@@ -1816,13 +1861,9 @@ class _VitalState extends State<Vital> {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const <Widget>[
-            SizedBox(
-              width: 60,
-              height: 60,
-              child: CircularProgressIndicator(),
-            ),
-            Padding(
+          children: <Widget>[
+            Chargement(controller: _controller,),
+            const Padding(
               padding: EdgeInsets.only(top: 16),
               child: Text('Chargement...'),
             ),
@@ -1835,7 +1876,6 @@ class _VitalState extends State<Vital> {
   Future displayTimePicker(BuildContext context, TextEditingController heureC) async {
     TimeOfDay heure;
     if (heureC.text!=""){
-      print(heureC.text);
       heure = TimeOfDay(hour:int.parse(heureC.text.split(":")[0]),minute: int.parse(heureC.text.split(":")[1]));
     }else{
       heure = TimeOfDay.now();
@@ -1847,29 +1887,87 @@ class _VitalState extends State<Vital> {
 
     if (time != null) {
       setState(() {
-        heureC.text = "${time.hour}:${time.minute}";
+        heureC.text = time.format(context);
       });
     }
   }
 
-  Future<String> litFichier2()async{
-    //Isolate.spawn(litFichier,"ok");
-    return ("ok");
-  }
-
   litFichier()async{
-    PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
+    doc = await Officiant().litFichier(widget.chemin, context);
+    prefs = await SharedPreferences.getInstance();
     setState(() {
-      /*nomPrenom.text = (doc.form.fields[0] as PdfTextBoxField).text;
-      nomFille.text = (doc.form.fields[1] as PdfTextBoxField).text;
-      date.text = (doc.form.fields[2] as PdfTextBoxField).text;
-      lieuNez.text = (doc.form.fields[3] as PdfTextBoxField).text;
-      adresse.text = (doc.form.fields[4] as PdfTextBoxField).text;
-      CP.text = (doc.form.fields[5] as PdfTextBoxField).text;
-      ville.text = (doc.form.fields[6] as PdfTextBoxField).text;
-      tel.text = (doc.form.fields[7] as PdfTextBoxField).text;
-      qui.text = (doc.form.fields[8] as PdfTextBoxField).text;
-      telQui.text = (doc.form.fields[9] as PdfTextBoxField).text;*/
+      arreter = (doc.form.fields[prefs.getInt("arreter")??0] as PdfCheckBoxField).isChecked;
+      pansement_imb = (doc.form.fields[prefs.getInt("pansement")??0] as PdfCheckBoxField).isChecked;
+      garrot = (doc.form.fields[prefs.getInt("garrot")??0] as PdfCheckBoxField).isChecked;
+      rechauffe = (doc.form.fields[prefs.getInt("rechauffer")??0] as PdfCheckBoxField).isChecked;
+      allonge = (doc.form.fields[prefs.getInt("allonger")??0] as PdfCheckBoxField).isChecked;
+      heure_Hemo.text  = (doc.form.fields[prefs.getInt("heure_hem")??0] as PdfTextBoxField).text;
+      tape_dos = (doc.form.fields[prefs.getInt("tape_dos")??0] as PdfCheckBoxField).isChecked;
+      compression = (doc.form.fields[prefs.getInt("compression")??0] as PdfCheckBoxField).isChecked;
+      retournement = (doc.form.fields[prefs.getInt("retournement")??0] as PdfCheckBoxField).isChecked;
+      casque = (doc.form.fields[prefs.getInt("casque")??0] as PdfCheckBoxField).isChecked;
+      bascule = (doc.form.fields[prefs.getInt("bascule")??0] as PdfCheckBoxField).isChecked;
+      elevation_menton = (doc.form.fields[prefs.getInt("menton")??0] as PdfCheckBoxField).isChecked;
+      LVA = (doc.form.fields[prefs.getInt("LVA")??0] as PdfCheckBoxField).isChecked;
+      neutre = (doc.form.fields[prefs.getInt("neutre")??0] as PdfCheckBoxField).isChecked;
+      respiration = (doc.form.fields[prefs.getInt("type_aspi")??0] as PdfRadioButtonListField).selectedIndex;
+      insufl = (doc.form.fields[prefs.getInt("insufflation")??0] as PdfCheckBoxField).isChecked;
+      aspi = (doc.form.fields[prefs.getInt("aspi")??0] as PdfCheckBoxField).isChecked;
+      circulation = (doc.form.fields[prefs.getInt("type_poul")??0] as PdfRadioButtonListField).selectedIndex;
+      massage = (doc.form.fields[prefs.getInt("massage")??0] as PdfCheckBoxField).isChecked;
+      DAE = (doc.form.fields[prefs.getInt("DAE")??0] as PdfCheckBoxField).isChecked;
+      heure_choc1.text  = (doc.form.fields[prefs.getInt("choc_1")??0] as PdfTextBoxField).text;
+      heure_choc2.text  = (doc.form.fields[prefs.getInt("choc_2")??0] as PdfTextBoxField).text;
+      heure_choc3.text  = (doc.form.fields[prefs.getInt("choc_3")??0] as PdfTextBoxField).text;
+      heure_choc4.text  = (doc.form.fields[prefs.getInt("choc_4")??0] as PdfTextBoxField).text;
+      ouvre_y = (doc.form.fields[prefs.getInt("ouvre_y")??0] as PdfCheckBoxField).isChecked;
+      reponse_v = (doc.form.fields[prefs.getInt("reponse_v")??0] as PdfCheckBoxField).isChecked;
+      reponse_m = (doc.form.fields[prefs.getInt("reponse_M")??0] as PdfCheckBoxField).isChecked;
+      PLS = (doc.form.fields[prefs.getInt("PLS")??0] as PdfCheckBoxField).isChecked;
+      //VITAL 2
+      liberation = (doc.form.fields[prefs.getInt("liberation")??0] as PdfCheckBoxField).isChecked;
+      aspiration = (doc.form.fields[prefs.getInt("aspiration")??0] as PdfCheckBoxField).isChecked;
+      signe_detresse_1.text  = (doc.form.fields[prefs.getInt("signes_detresse")??0] as PdfTextBoxField).text;
+      signe_detresse_2.text  = (doc.form.fields[prefs.getInt("signes_detresse2")??0] as PdfTextBoxField).text;
+      signe_detresse_3.text  = (doc.form.fields[prefs.getInt("signes_detresse3")??0] as PdfTextBoxField).text;
+      //VITAL3
+      mvt_frequence.text  = (doc.form.fields[prefs.getInt("mvt_frequence")??0] as PdfTextBoxField).text;
+      pauses.text  = (doc.form.fields[prefs.getInt("pauses")??0] as PdfTextBoxField).text;
+      saturation.text  = (doc.form.fields[prefs.getInt("saturation")??0] as PdfTextBoxField).text;
+      ambiant = (doc.form.fields[prefs.getInt("ambiant")??0] as PdfCheckBoxField).isChecked;
+      type_respiration = (doc.form.fields[prefs.getInt("type_respiration")??0] as PdfRadioButtonListField).selectedIndex;
+      bat_frequence.text  = (doc.form.fields[prefs.getInt("bat_frequence")??0] as PdfTextBoxField).text;
+      amplitude.text  = (doc.form.fields[prefs.getInt("amplitude")??0] as PdfTextBoxField).text;
+      repos = (doc.form.fields[prefs.getInt("repos")??0] as PdfCheckBoxField).isChecked;
+      tension.text  = (doc.form.fields[prefs.getInt("tension")??0] as PdfTextBoxField).text;
+      tension_habituelle.text  = (doc.form.fields[prefs.getInt("tension_habituelle")??0] as PdfTextBoxField).text;
+      recolore = (doc.form.fields[prefs.getInt("recoloration")??0] as PdfCheckBoxField).isChecked;
+      pupilles_egales = (doc.form.fields[prefs.getInt("pupilles")??0] as PdfRadioButtonListField).selectedIndex;
+      areactives_G = ("${(doc.form.fields[prefs.getInt("aréactives")??0] as PdfTextBoxField).text}  ")[0]=="X";
+      areactives_D = ("${(doc.form.fields[prefs.getInt("aréactives")??0] as PdfTextBoxField).text}  ")[1]=="X";
+      dilatees_G = ("${(doc.form.fields[prefs.getInt("dilatées")??0] as PdfTextBoxField).text}  ")[0]=="X";
+      dilatees_D = ("${(doc.form.fields[prefs.getInt("dilatées")??0] as PdfTextBoxField).text}  ")[1]=="X";
+      serrees_G = ("${(doc.form.fields[prefs.getInt("serres")??0] as PdfTextBoxField).text}  ")[0]=="X";
+      serrees_D = ("${(doc.form.fields[prefs.getInt("serres")??0] as PdfTextBoxField).text}  ")[1]=="X";
+      mains_G = ("${(doc.form.fields[prefs.getInt("mains")??0] as PdfTextBoxField).text}  ")[0]=="X";
+      mains_D = ("${(doc.form.fields[prefs.getInt("mains")??0] as PdfTextBoxField).text}  ")[1]=="X";
+      bras_G = ("${(doc.form.fields[prefs.getInt("bras")??0] as PdfTextBoxField).text}  ")[0]=="X";
+      bras_D = ("${(doc.form.fields[prefs.getInt("bras")??0] as PdfTextBoxField).text}  ")[1]=="X";
+      jambe_G = ("${(doc.form.fields[prefs.getInt("jambes")??0] as PdfTextBoxField).text}  ")[0]=="X";
+      jambe_D = ("${(doc.form.fields[prefs.getInt("jambes")??0] as PdfTextBoxField).text}  ")[1]=="X";
+      pied_G = ("${(doc.form.fields[prefs.getInt("pieds")??0] as PdfTextBoxField).text}  ")[0]=="X";
+      pied_D = ("${(doc.form.fields[prefs.getInt("pieds")??0] as PdfTextBoxField).text}  ")[1]=="X";
+      yeux = 4-((doc.form.fields[prefs.getInt("ouvre_yeux")??0] as PdfRadioButtonListField).selectedIndex);
+      if (yeux==5) yeux = 0;
+      verbale = 5-(doc.form.fields[prefs.getInt("verbale")??0] as PdfRadioButtonListField).selectedIndex+1;
+      if (verbale==6) verbale = 0;
+      motrice = 6-(doc.form.fields[prefs.getInt("motrice")??0] as PdfRadioButtonListField).selectedIndex+1;
+      if (motrice==7) motrice = 0;
+      oxy.text  = (doc.form.fields[prefs.getInt("oxy")??0] as PdfTextBoxField).text;
+      position = (doc.form.fields[prefs.getInt("position")??0] as PdfRadioButtonListField).selectedIndex;
+      position_cplx.text = (doc.form.fields[prefs.getInt("position_complexe")??0] as PdfTextBoxField).text;
+
+      //GLASGOW
     });
     setState(() {
       future = "ok";
@@ -1877,63 +1975,78 @@ class _VitalState extends State<Vital> {
   }
 
   metChampsAJour() async {
-    /*PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
-    (doc.form.fields[0] as PdfTextBoxField).text = nomPrenom.text;
-    (doc.form.fields[1] as PdfTextBoxField).text = nomFille.text;
-    (doc.form.fields[2] as PdfTextBoxField).text = date.text;
-    (doc.form.fields[3] as PdfTextBoxField).text = lieuNez.text;
-    (doc.form.fields[4] as PdfTextBoxField).text = adresse.text;
-    (doc.form.fields[5] as PdfTextBoxField).text = CP.text;
-    (doc.form.fields[6] as PdfTextBoxField).text = ville.text;
-    (doc.form.fields[7] as PdfTextBoxField).text = tel.text;
-    (doc.form.fields[8] as PdfTextBoxField).text = qui.text;
-    (doc.form.fields[9] as PdfTextBoxField).text = telQui.text;
-    if(await enregistre()){
-      Officiant().enregistreFichier(widget.chemin, doc).then((value) => {
-        if (value)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistré !"),))
-        else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Une erreur est survenue :/"),))
-      });
-    }
+    doc = await Officiant().litFichier(widget.chemin, context);
+    (doc.form.fields[prefs.getInt("arreter")??0] as PdfCheckBoxField).isChecked = arreter;
+    (doc.form.fields[prefs.getInt("pansement")??0] as PdfCheckBoxField).isChecked = pansement_imb;
+    (doc.form.fields[prefs.getInt("garrot")??0] as PdfCheckBoxField).isChecked = garrot;
+    (doc.form.fields[prefs.getInt("rechauffer")??0] as PdfCheckBoxField).isChecked = rechauffe;
+    (doc.form.fields[prefs.getInt("allonger")??0] as PdfCheckBoxField).isChecked = allonge;
+    (doc.form.fields[prefs.getInt("heure_hem")??0] as PdfTextBoxField).text = heure_Hemo.text;
+    (doc.form.fields[prefs.getInt("tape_dos")??0] as PdfCheckBoxField).isChecked = tape_dos;
+    (doc.form.fields[prefs.getInt("compression")??0] as PdfCheckBoxField).isChecked = compression;
+    (doc.form.fields[prefs.getInt("retournement")??0] as PdfCheckBoxField).isChecked = retournement;
+    (doc.form.fields[prefs.getInt("casque")??0] as PdfCheckBoxField).isChecked = casque;
+    (doc.form.fields[prefs.getInt("bascule")??0] as PdfCheckBoxField).isChecked = bascule;
+    (doc.form.fields[prefs.getInt("menton")??0] as PdfCheckBoxField).isChecked = elevation_menton;
+    (doc.form.fields[prefs.getInt("LVA")??0] as PdfCheckBoxField).isChecked = LVA;
+    (doc.form.fields[prefs.getInt("neutre")??0] as PdfCheckBoxField).isChecked = neutre;
+    (doc.form.fields[prefs.getInt("type_aspi")??0] as PdfRadioButtonListField).selectedIndex = respiration;
+    (doc.form.fields[prefs.getInt("insufflation")??0] as PdfCheckBoxField).isChecked = insufl;
+    (doc.form.fields[prefs.getInt("aspi")??0] as PdfCheckBoxField).isChecked = aspi;
+    (doc.form.fields[prefs.getInt("type_poul")??0] as PdfRadioButtonListField).selectedIndex = circulation;
+    (doc.form.fields[prefs.getInt("massage")??0] as PdfCheckBoxField).isChecked = massage;
+    (doc.form.fields[prefs.getInt("DAE")??0] as PdfCheckBoxField).isChecked = DAE;
+    (doc.form.fields[prefs.getInt("choc_1")??0] as PdfTextBoxField).text = heure_choc1.text;
+    (doc.form.fields[prefs.getInt("choc_2")??0] as PdfTextBoxField).text = heure_choc2.text;
+    (doc.form.fields[prefs.getInt("choc_3")??0] as PdfTextBoxField).text = heure_choc3.text;
+    (doc.form.fields[prefs.getInt("choc_4")??0] as PdfTextBoxField).text = heure_choc4.text;
+    (doc.form.fields[prefs.getInt("ouvre_y")??0] as PdfCheckBoxField).isChecked = ouvre_y;
+    (doc.form.fields[prefs.getInt("reponse_v")??0] as PdfCheckBoxField).isChecked = reponse_v;
+    (doc.form.fields[prefs.getInt("reponse_M")??0] as PdfCheckBoxField).isChecked = reponse_m;
+    (doc.form.fields[prefs.getInt("PLS")??0] as PdfCheckBoxField).isChecked = PLS;
+    //VITAL 2
+    (doc.form.fields[prefs.getInt("liberation")??0] as PdfCheckBoxField).isChecked = liberation;
+    (doc.form.fields[prefs.getInt("aspiration")??0] as PdfCheckBoxField).isChecked = aspiration;
+    (doc.form.fields[prefs.getInt("signes_detresse")??0] as PdfTextBoxField).text = signe_detresse_1.text;
+    (doc.form.fields[prefs.getInt("signes_detresse2")??0] as PdfTextBoxField).text = signe_detresse_2.text;
+    (doc.form.fields[prefs.getInt("signes_detresse3")??0] as PdfTextBoxField).text = signe_detresse_3.text;
+    //VITAL3
+    (doc.form.fields[prefs.getInt("mvt_frequence")??0] as PdfTextBoxField).text = mvt_frequence.text;
+    (doc.form.fields[prefs.getInt("pauses")??0] as PdfTextBoxField).text = pauses.text;
+    (doc.form.fields[prefs.getInt("saturation")??0] as PdfTextBoxField).text = saturation.text;
+    (doc.form.fields[prefs.getInt("ambiant")??0] as PdfCheckBoxField).isChecked = ambiant;
+    (doc.form.fields[prefs.getInt("type_respiration")??0] as PdfRadioButtonListField).selectedIndex = m.max(0,type_respiration);
+    (doc.form.fields[prefs.getInt("bat_frequence")??0] as PdfTextBoxField).text = bat_frequence.text;
+    (doc.form.fields[prefs.getInt("amplitude")??0] as PdfTextBoxField).text = amplitude.text;
+    (doc.form.fields[prefs.getInt("repos")??0] as PdfCheckBoxField).isChecked = repos;
+    (doc.form.fields[prefs.getInt("tension")??0] as PdfTextBoxField).text = tension.text;
+    (doc.form.fields[prefs.getInt("tension_habituelle")??0] as PdfTextBoxField).text = tension_habituelle.text;
+    (doc.form.fields[prefs.getInt("recoloration")??0] as PdfCheckBoxField).isChecked = recolore;
+    (doc.form.fields[prefs.getInt("pupilles")??0] as PdfRadioButtonListField).selectedIndex = pupilles_egales;
+    (doc.form.fields[prefs.getInt("aréactives")??0] as PdfTextBoxField).text = "${areactives_G?"X":" "}${areactives_D?"X":" "} ";
+    (doc.form.fields[prefs.getInt("dilatées")??0] as PdfTextBoxField).text = "${dilatees_G?"X":" "}${dilatees_D?"X":" "} ";
+    (doc.form.fields[prefs.getInt("serrées")??0] as PdfTextBoxField).text = "${serrees_G?"X":" "}${serrees_D?"X":" "} ";
+    (doc.form.fields[prefs.getInt("mains")??0] as PdfTextBoxField).text = "${mains_G?"X":" "}${mains_D?"X":" "} ";
+    (doc.form.fields[prefs.getInt("bras")??0] as PdfTextBoxField).text = "${bras_G?"X":" "}${bras_D?"X":" "} ";
+    (doc.form.fields[prefs.getInt("jambes")??0] as PdfTextBoxField).text = "${jambe_G?"X":" "}${jambe_D?"X":" "} ";
+    (doc.form.fields[prefs.getInt("pieds")??0] as PdfTextBoxField).text = "${pied_G?"X":" "}${pied_D?"X":" "} ";
+    if(yeux>0)(doc.form.fields[prefs.getInt("ouvre_yeux")??0] as PdfRadioButtonListField).selectedIndex = 5 - yeux -1;
+    if(verbale>0)(doc.form.fields[prefs.getInt("verbale")??0] as PdfRadioButtonListField).selectedIndex = 6 - verbale - 1;
+    if(motrice>0)(doc.form.fields[prefs.getInt("motrice")??0] as PdfRadioButtonListField).selectedIndex = 7 - motrice - 1;
+    (doc.form.fields[prefs.getInt("glasgow")??0] as PdfTextBoxField).text = yeux*verbale*motrice>0?(yeux+motrice+verbale).toString():"";
+    (doc.form.fields[prefs.getInt("oxy")??0] as PdfTextBoxField).text = oxy.text;
+    (doc.form.fields[prefs.getInt("position")??0] as PdfRadioButtonListField).selectedIndex = position;
+    (doc.form.fields[prefs.getInt("position_complexe")??0] as PdfTextBoxField).text = position==4?position_cplx.text:"";
+
+    Officiant().enregistreFichier(widget.chemin, doc).then((value) => {
+      if (value)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistré !"),))
+      else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Une erreur est survenue :/"),))
+    });
     setState(() {
       enr = true;
-    });*/
+    });
   }
 
-  Future<bool>enregistre()async{
-    if (widget.chemin == ""){
-      TextEditingController nomPdf = TextEditingController();
-      await showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('Enregistrer'),
-            content: ListView(shrinkWrap:true,children: [
-              const Padding(padding: EdgeInsets.all(5),
-                  child:Text('Comment souhaitez vous appeler le pdf?')),
-              TextField(
-                controller: nomPdf,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'nom',
-                ),
-              )
-            ]),
-            actions: <Widget>[
-              ElevatedButton(
-                  onPressed: () async {
-                    String x = await Officiant().nouveauChemin(nomPdf.text);
-                    if (x =="0"){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Un fichier du même nom existe déjà"),));return;};
-                    if( x == "1")ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistrement impossible"),));
-                    if (x!="1"&& x!="0")widget.chemin = x;
-                    Navigator.pop(_);
-                  },
-                  child: const Text('Enregistrer')),
-            ],
-            elevation: 24,
-          ),
-          barrierDismissible: false);
-    }
-    return true;
-  }
 
   //TODO:vérifier enregistrement pour les radios group
   //TODO:score de Glasgow

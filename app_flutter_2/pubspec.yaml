@@ -37,13 +37,16 @@ dependencies:
   cupertino_icons: ^1.0.2
   syncfusion_flutter_pdf: ^20.4.50
   file_saver: ^0.2.1
-  #native_pdf_view: ^4.2.0
   path_provider: ^2.0.14
   intl_phone_field: ^3.1.0
-  accordion: ^2.5.1
   permission_handler: ^10.2.0
-  flutter_xlider: ^3.5.0
   syncfusion_flutter_signaturepad: ^20.4.54
+  shared_preferences: ^2.1.2
+  open_file: ^3.2.1
+  share_plus: ^7.0.2
+  url_launcher: ^6.1.9
+  pdf_render: ^1.4.0
+  image: ^4.0.17
 
 dev_dependencies:
   flutter_test:
@@ -70,6 +73,11 @@ flutter:
   assets:
     - assets/fiche_bilan_V2.pdf
     - assets/physique.png
+    - assets/logo.png
+    - assets/charge_1.png
+    - assets/charge_2.png
+    - assets/charge_3.png
+    - assets/IPIC_ASSO.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware

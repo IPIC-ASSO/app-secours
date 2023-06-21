@@ -1,5 +1,7 @@
+import 'package:app_secours/charge.dart';
 import 'package:app_secours/menu.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 import 'Officiant.dart';
@@ -14,8 +16,10 @@ class Surveillance extends StatefulWidget {
   State<Surveillance> createState() => _SurveillanceState();
 }
 
-class _SurveillanceState extends State<Surveillance> {
+class _SurveillanceState extends State<Surveillance> with TickerProviderStateMixin {
 
+  late AnimationController _controller;
+  late final SharedPreferences prefs;
   bool enr = true;
   String future = "";
   DateTime selectedDate = DateTime.now();
@@ -46,12 +50,25 @@ class _SurveillanceState extends State<Surveillance> {
   TextEditingController glycemie2  = TextEditingController();
   String unite_glycemie1 = "mg/dl";
   String unite_glycemie2 = "mg/dl";
+  List<String> unite = ["mg/dl","g/l","mmol/ml"];
 
 
   @override
   void initState() {
     litFichier();
     super.initState();
+    _controller = AnimationController(
+        duration: const Duration(milliseconds: 2000), vsync: this)
+      ..addStatusListener((status) {
+        if(status == AnimationStatus.completed)_controller.reverse();
+        else if(status == AnimationStatus.dismissed)_controller.forward();})
+      ..forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -127,20 +144,20 @@ class _SurveillanceState extends State<Surveillance> {
                       labelText: 'Fréquence (mvt/min)',
                     ),
                   )),
-                  const Positioned(child: Align(
+                  const Align(
                     alignment: Alignment.centerLeft,
                     child:
                     Padding(padding: EdgeInsets.all(4),child:
-                    const Text("Indiquez les pauses >6s", style:TextStyle(fontStyle: FontStyle.italic)),
+                    Text("Indiquez les pauses >6s", style:TextStyle(fontStyle: FontStyle.italic)),
                     ),
-                  )),
+                  ),
                   Padding(padding:const EdgeInsets.all(4),child: TextField(
                     onChanged: (text){setState(() {
                       enr = false;
                     }); },
                     controller: amplitude1,
                     decoration: InputDecoration(
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                       labelText: 'Amplitude + régularité',
                       enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blue[600]??Colors.blue)),
                       focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blue[600]??Colors.blue)),
@@ -153,7 +170,7 @@ class _SurveillanceState extends State<Surveillance> {
                     keyboardType: TextInputType.number,
                     controller: saturation1,
                     decoration: InputDecoration(
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                       enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blue[200]??Colors.blue)),
                       focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.blue[200]??Colors.blue)),
                       labelText: 'Saturation (%SpO²)',
@@ -168,7 +185,7 @@ class _SurveillanceState extends State<Surveillance> {
                     decoration: InputDecoration(
                       enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.red[200]??Colors.red)),
                       focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.red[200]??Colors.red)),
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                       labelText: 'fréquence (bat/min)',
                     ),
                   )),
@@ -181,7 +198,7 @@ class _SurveillanceState extends State<Surveillance> {
                     decoration: InputDecoration(
                       enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.red[600]??Colors.red)),
                       focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.red[600]??Colors.red)),
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                       labelText: 'Amplitude + régularité',
                     ),
                   )),
@@ -194,7 +211,7 @@ class _SurveillanceState extends State<Surveillance> {
                     decoration: InputDecoration(
                       enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.red[200]??Colors.red)),
                       focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.red[200]??Colors.red)),
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                       labelText: 'Tension (mm de Hg)',
                     ),
                   )),
@@ -207,7 +224,7 @@ class _SurveillanceState extends State<Surveillance> {
                     decoration: InputDecoration(
                       enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.red[200]??Colors.red)),
                       focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.red[200]??Colors.red)),
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                       labelText: 'TRC (s)',
                     ),
                   )),
@@ -218,7 +235,7 @@ class _SurveillanceState extends State<Surveillance> {
                     keyboardType: TextInputType.number,
                     controller: glasgow1,
                     decoration: InputDecoration(
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                       enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.green[200]??Colors.green)),
                       focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.green[200]??Colors.green)),
                       labelText: 'Glasgow (se reporter au vital)',
@@ -231,7 +248,7 @@ class _SurveillanceState extends State<Surveillance> {
                     keyboardType: TextInputType.number,
                     controller: temp1,
                     decoration: InputDecoration(
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                       labelText: 'température (°C)',
                       enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.green[600]??Colors.green)),
                       focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.green[600]??Colors.green)),
@@ -272,7 +289,7 @@ class _SurveillanceState extends State<Surveillance> {
                                 unite_glycemie1 = value!;
                               });
                             },
-                            items: <String>["mg/dl","g/l","mmol/ml"].map<DropdownMenuItem<String>>((String value) {
+                            items: unite.map<DropdownMenuItem<String>>((String value) {
                               return DropdownMenuItem<String>(
                                 value: value,
                                 child: Text(value),
@@ -327,13 +344,13 @@ class _SurveillanceState extends State<Surveillance> {
                           labelText: 'Fréquence (mvt/min)',
                         ),
                       )),
-                      const Positioned(child: Align(
+                      const Align(
                         alignment: Alignment.centerLeft,
                         child:
                         Padding(padding: EdgeInsets.all(4),child:
-                        const Text("Indiquez les pauses >6s", style:TextStyle(fontStyle: FontStyle.italic)),
+                        Text("Indiquez les pauses >6s", style:TextStyle(fontStyle: FontStyle.italic)),
                         ),
-                      )),
+                      ),
                       Padding(padding:const EdgeInsets.all(4),child: TextField(
                         onChanged: (text){setState(() {
                           enr = false;
@@ -473,16 +490,12 @@ class _SurveillanceState extends State<Surveillance> {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const <Widget>[
-            SizedBox(
-              width: 60,
-              height: 60,
-              child: CircularProgressIndicator(),
-            ),
-            Padding(
+          children: <Widget>[
+            const Padding(
               padding: EdgeInsets.only(top: 16),
               child: Text('Chargement...'),
             ),
+            Chargement(controller: _controller)
           ],
         ),
       );
@@ -503,31 +516,41 @@ class _SurveillanceState extends State<Surveillance> {
 
     if (time != null) {
       setState(() {
-        heureC.text = "${time.hour}:${time.minute}";
+        heureC.text = time.format(context);
       });
     }
   }
 
-  Future<String> litFichier2()async{
-    //Isolate.spawn(litFichier,"ok");
-    return ("ok");
-  }
-
   litFichier()async{
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
+    prefs = await SharedPreferences.getInstance();
     setState(() {
-      /*securite.text = (doc.form.fields[11] as PdfTextBoxField).text;
-      //supr = (doc.form.fields[12] as PdfCheckBoxField).isChecked;
-      //balise = (doc.form.fields[13] as PdfCheckBoxField).isChecked;
-      //degage = (doc.form.fields[14] as PdfCheckBoxField).isChecked;
-      //equ_secu = (doc.form.fields[15] as PdfCheckBoxField).isChecked;
-      //renforts = (doc.form.fields[16] as PdfCheckBoxField).isChecked;
-      scene.text = (doc.form.fields[17] as PdfTextBoxField).text;
-      quepasta.text = (doc.form.fields[18] as PdfTextBoxField).text;
-      //SMV = (doc.form.fields[19] as PdfCheckBoxField).isChecked;
-      plainte.text = (doc.form.fields[20] as PdfTextBoxField).text;
-      //moyens = (doc.form.fields[21] as PdfCheckBoxField).isChecked;
-      heure.text = (doc.form.fields[22] as PdfTextBoxField).text;*/
+      evolution.text  = (doc.form.fields[prefs.getInt("surveillance_1")??0] as PdfTextBoxField).text;
+      evolution2.text  = (doc.form.fields[prefs.getInt("surveillance_2")??0] as PdfTextBoxField).text;
+      heure1.text  = (doc.form.fields[prefs.getInt("heure_surveillance1")??0] as PdfTextBoxField).text;
+      heure2.text  = (doc.form.fields[prefs.getInt("heure_surveillance2")??0] as PdfTextBoxField).text;
+      frequence1.text  = (doc.form.fields[prefs.getInt("frequence_surveillance1")??0] as PdfTextBoxField).text;
+      frequence2.text  = (doc.form.fields[prefs.getInt("frequence_surveillance2")??0] as PdfTextBoxField).text;
+      amplitude1.text  = (doc.form.fields[prefs.getInt("pauses_surveillance1")??0] as PdfTextBoxField).text;
+      amplitude2.text  = (doc.form.fields[prefs.getInt("pauses_surveillance2")??0] as PdfTextBoxField).text;
+      saturation1.text  = (doc.form.fields[prefs.getInt("saturation_surveillance1")??0] as PdfTextBoxField).text;
+      saturation2.text  = (doc.form.fields[prefs.getInt("saturation_surveillance2")??0] as PdfTextBoxField).text;
+      frequence_bat1.text  = (doc.form.fields[prefs.getInt("bat_surveillance1")??0] as PdfTextBoxField).text;
+      frequence_bat2.text  = (doc.form.fields[prefs.getInt("bat_surveillance2")??0] as PdfTextBoxField).text;
+      amplitude_bat1.text  = (doc.form.fields[prefs.getInt("amplitude_surveillance1")??0] as PdfTextBoxField).text;
+      amplitude_bat2.text  = (doc.form.fields[prefs.getInt("amplitude_surveillance2")??0] as PdfTextBoxField).text;
+      tension1.text  = (doc.form.fields[prefs.getInt("hg_surveillance1")??0] as PdfTextBoxField).text;
+      tension2.text  = (doc.form.fields[prefs.getInt("hg_surveillance2")??0] as PdfTextBoxField).text;
+      TRC1.text  = (doc.form.fields[prefs.getInt("sec_surveillance1")??0] as PdfTextBoxField).text;
+      TRC2.text  = (doc.form.fields[prefs.getInt("sec_surveillance2")??0] as PdfTextBoxField).text;
+      glasgow1.text  = (doc.form.fields[prefs.getInt("glasgow_surveillance1")??0] as PdfTextBoxField).text;
+      glasgow2.text  = (doc.form.fields[prefs.getInt("glasgow_surveillance2")??0] as PdfTextBoxField).text;
+      temp1.text  = (doc.form.fields[prefs.getInt("temperature_surveillance1")??0] as PdfTextBoxField).text;
+      temp2.text  = (doc.form.fields[prefs.getInt("temperature_surveillance2")??0] as PdfTextBoxField).text;
+      glycemie1.text  = (doc.form.fields[prefs.getInt("glycemie_surveillance1")??0] as PdfTextBoxField).text;
+      glycemie2.text  = (doc.form.fields[prefs.getInt("glycemie_surveillance2")??0] as PdfTextBoxField).text;
+      unite_glycemie1 = unite[(doc.form.fields[prefs.getInt("unite_surveillance1")??0] as PdfRadioButtonListField).selectedIndex];
+      unite_glycemie2 = unite[(doc.form.fields[prefs.getInt("unite_surveillance2")??0] as PdfRadioButtonListField).selectedIndex];
     });
     setState(() {
       future = "ok";
@@ -536,62 +559,42 @@ class _SurveillanceState extends State<Surveillance> {
 
   metChampsAJour() async {
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
-    /*(doc.form.fields[0] as PdfTextBoxField).text = securite.text;
-    (doc.form.fields[1] as PdfCheckBoxField).isChecked = supr;
-    (doc.form.fields[2] as PdfCheckBoxField).isChecked = balise;
-    (doc.form.fields[3] as PdfCheckBoxField).isChecked = degage;
-    (doc.form.fields[4] as PdfCheckBoxField).isChecked = equ_secu;
-    (doc.form.fields[5] as PdfCheckBoxField).isChecked = renforts;
-    (doc.form.fields[6] as PdfTextBoxField).text = scene.text;
-    (doc.form.fields[7] as PdfTextBoxField).text = quepasta.text;
-    (doc.form.fields[5] as PdfCheckBoxField).isChecked = SMV;
-    (doc.form.fields[9] as PdfTextBoxField).text = plainte.text;
-    (doc.form.fields[5] as PdfCheckBoxField).isChecked = moyens;
-    (doc.form.fields[8] as PdfTextBoxField).text = heure.text;*/
-    if(await enregistre()){
-      Officiant().enregistreFichier(widget.chemin, doc).then((value) => {
-        if (value)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistré !"),))
-        else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Une erreur est survenue :/"),))
-      });
-    }
+
+    (doc.form.fields[prefs.getInt("surveillance_1")??0] as PdfTextBoxField).text = evolution.text;
+    (doc.form.fields[prefs.getInt("surveillance_2")??0] as PdfTextBoxField).text = evolution2.text;
+    (doc.form.fields[prefs.getInt("heure_surveillance1")??0] as PdfTextBoxField).text = heure1.text;
+    (doc.form.fields[prefs.getInt("heure_surveillance2")??0] as PdfTextBoxField).text = heure2.text;
+    (doc.form.fields[prefs.getInt("frequence_surveillance1")??0] as PdfTextBoxField).text = frequence1.text;
+    (doc.form.fields[prefs.getInt("frequence_surveillance2")??0] as PdfTextBoxField).text = frequence2.text;
+    (doc.form.fields[prefs.getInt("pauses_surveillance1")??0] as PdfTextBoxField).text = amplitude1.text;
+    (doc.form.fields[prefs.getInt("pauses_surveillance2")??0] as PdfTextBoxField).text = amplitude2.text;
+    (doc.form.fields[prefs.getInt("saturation_surveillance1")??0] as PdfTextBoxField).text = saturation1.text;
+    (doc.form.fields[prefs.getInt("saturation_surveillance2")??0] as PdfTextBoxField).text = saturation2.text;
+    (doc.form.fields[prefs.getInt("bat_surveillance1")??0] as PdfTextBoxField).text = frequence_bat1.text;
+    (doc.form.fields[prefs.getInt("bat_surveillance2")??0] as PdfTextBoxField).text = frequence_bat2.text;
+    (doc.form.fields[prefs.getInt("amplitude_surveillance1")??0] as PdfTextBoxField).text = amplitude_bat1.text;
+    (doc.form.fields[prefs.getInt("amplitude_surveillance2")??0] as PdfTextBoxField).text = amplitude_bat2.text;
+    (doc.form.fields[prefs.getInt("hg_surveillance1")??0] as PdfTextBoxField).text = tension1.text;
+    (doc.form.fields[prefs.getInt("hg_surveillance2")??0] as PdfTextBoxField).text = tension2.text;
+    (doc.form.fields[prefs.getInt("sec_surveillance1")??0] as PdfTextBoxField).text = TRC1.text;
+    (doc.form.fields[prefs.getInt("sec_surveillance2")??0] as PdfTextBoxField).text = TRC2.text;
+    (doc.form.fields[prefs.getInt("glasgow_surveillance1")??0] as PdfTextBoxField).text = glasgow1.text;
+    (doc.form.fields[prefs.getInt("glasgow_surveillance2")??0] as PdfTextBoxField).text = glasgow2.text;
+    (doc.form.fields[prefs.getInt("temperature_surveillance1")??0] as PdfTextBoxField).text = temp1.text;
+    (doc.form.fields[prefs.getInt("temperature_surveillance2")??0] as PdfTextBoxField).text = temp2.text;
+    (doc.form.fields[prefs.getInt("glycemie_surveillance1")??0] as PdfTextBoxField).text = glycemie1.text;
+    (doc.form.fields[prefs.getInt("glycemie_surveillance2")??0] as PdfTextBoxField).text = glycemie2.text;
+    (doc.form.fields[prefs.getInt("unite_surveillance1")??0] as PdfRadioButtonListField).selectedIndex = unite.indexOf(unite_glycemie1);
+    (doc.form.fields[prefs.getInt("unite_surveillance2")??0] as PdfRadioButtonListField).selectedIndex = unite.indexOf(unite_glycemie2);
+
+
+
+    Officiant().enregistreFichier(widget.chemin, doc).then((value) => {
+      if (value)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistré !"),))
+      else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Une erreur est survenue :/"),))
+    });
     setState(() {
       enr = true;
     });
-  }
-
-  Future<bool>enregistre()async{
-    if (widget.chemin == ""){
-      TextEditingController nomPdf = TextEditingController();
-      await showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('Enregistrer'),
-            content: ListView(shrinkWrap:true,children: [
-              const Padding(padding: EdgeInsets.all(5),
-                  child:Text('Comment souhaitez vous appeler le pdf?')),
-              TextField(
-                controller: nomPdf,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'nom',
-                ),
-              )
-            ]),
-            actions: <Widget>[
-              ElevatedButton(
-                  onPressed: () async {
-                    String x = await Officiant().nouveauChemin(nomPdf.text);
-                    if (x =="0"){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Un fichier du même nom existe déjà"),));return;}
-                    if( x == "1")ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistrement impossible"),));
-                    if (x!="1"&& x!="0")widget.chemin = x;
-                    Navigator.pop(_);
-                  },
-                  child: const Text('Enregistrer')),
-            ],
-            elevation: 24,
-          ),
-          barrierDismissible: false);
-    }
-    return true;
   }
 }

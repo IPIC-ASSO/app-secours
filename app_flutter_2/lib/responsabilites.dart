@@ -1,7 +1,14 @@
+import 'dart:developer';
+import 'dart:ui';
+import 'package:app_secours/charge.dart';
+import 'package:flutter/services.dart';
+import 'package:pdf_render/pdf_render.dart' as pdi;
 import 'package:app_secours/Officiant.dart';
 import 'package:app_secours/menu.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'dart:ui' as ui;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:syncfusion_flutter_signaturepad/signaturepad.dart';
 
@@ -15,8 +22,10 @@ class Responsabilites extends StatefulWidget {
   State<Responsabilites> createState() => _ResponsabilitesState();
 }
 
-class _ResponsabilitesState extends State<Responsabilites> {
+class _ResponsabilitesState extends State<Responsabilites> with TickerProviderStateMixin {
 
+  late AnimationController _controller;
+  late final SharedPreferences prefs;
   bool enr = true;
   String future = "";
   DateTime selectedDate = DateTime.now();
@@ -37,7 +46,7 @@ class _ResponsabilitesState extends State<Responsabilites> {
   TextEditingController nomT2 = TextEditingController();
   TextEditingController prenomT2 = TextEditingController();
   TextEditingController dateT2 = TextEditingController();
-  int prise_charge = -1;
+  int prise_charge = 0;
   //pointage
   TextEditingController heure_poste = TextEditingController();
   TextEditingController heure_renforts = TextEditingController();
@@ -59,18 +68,30 @@ class _ResponsabilitesState extends State<Responsabilites> {
   int modifV = 0;
   int modifT1 = 0;
   int modifT2 = 0;
-  GlobalKey<SfSignaturePadState> _signaturePadKey = GlobalKey();
-  GlobalKey<SfSignaturePadState> _signaturePadKeyHop = GlobalKey();
-  GlobalKey<SfSignaturePadState> _signaturePadKeyV = GlobalKey();
-  GlobalKey<SfSignaturePadState> _signaturePadKeyT1 = GlobalKey();
-  GlobalKey<SfSignaturePadState> _signaturePadKeyT2 = GlobalKey();
-  ScrollPhysics controlesKrol = AlwaysScrollableScrollPhysics();
+  late Future<List<Uint8List>> signatures;
+  final GlobalKey<SfSignaturePadState> _signaturePadKey = GlobalKey();
+  final GlobalKey<SfSignaturePadState> _signaturePadKeyHop = GlobalKey();
+  final GlobalKey<SfSignaturePadState> _signaturePadKeyV = GlobalKey();
+  final GlobalKey<SfSignaturePadState> _signaturePadKeyT1 = GlobalKey();
+  final GlobalKey<SfSignaturePadState> _signaturePadKeyT2 = GlobalKey();
 
 
   @override
   void initState() {
     litFichier();
     super.initState();
+    _controller = AnimationController(
+        duration: const Duration(milliseconds: 2000), vsync: this)
+      ..addStatusListener((status) {
+        if(status == AnimationStatus.completed)_controller.reverse();
+        else if(status == AnimationStatus.dismissed)_controller.forward();})
+      ..forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -93,11 +114,10 @@ class _ResponsabilitesState extends State<Responsabilites> {
   }
 
   Widget corps(){
-    if (future !=null && future == "ok"){
+    if (future == "ok"){
       return Padding(
           padding: const EdgeInsets.fromLTRB(3,8,3,3),
           child:ListView(
-            physics: controlesKrol,
               children: [
                 ExpansionTile(
                 title: const Text('Responsables'),
@@ -116,34 +136,34 @@ class _ResponsabilitesState extends State<Responsabilites> {
                       labelText: 'Nom du responsable de l\'intervention',
                     ),
                   )),
-                  Column(
-                    children: [
-                      Text(modification[modif]),
-                      InkWell(
-                      onLongPress: ()=>setState(() {
-                        modif = 1;
-                        controlesKrol = NeverScrollableScrollPhysics();
-                      }),
-                      child:Container(
-                        child: SfSignaturePad(
-                          onDrawEnd:(){setState(() {
-                            modif = 0;
-                            controlesKrol = AlwaysScrollableScrollPhysics();
-                          });},
-                          key: _signaturePadKey,
-                          backgroundColor: Colors.grey[200],
-                        ),
-                        height: 200,
-                        width: 300,
-                      ),
-                    ),
-                    ElevatedButton(
-                        child: Text("Effacer la signature"),
-                        onPressed: () async {
-                          _signaturePadKey.currentState!.clear();
-                        }),
-                    ],
-                  ),
+                    FutureBuilder<List<Uint8List>>(
+                    future: signatures, // a previously-obtained Future<String> or null
+                    builder: (BuildContext context, AsyncSnapshot<List<Uint8List>> snapshot) {
+                      if (snapshot.hasData && snapshot.data!=null) {
+                        return Column(
+                            children: [
+                              Image.memory(snapshot.data![0].buffer.asUint8List(),),
+                              ElevatedButton(
+                                  child: const Text("Modifier"),
+                                  onPressed: () async {
+                                    await SigneToutDeSuite(context, _signaturePadKey).then((value) async {
+                                      try{
+                                        final x  =  await _signaturePadKey.currentState!.toImage();
+                                        final y = await x.toByteData(format: ui.ImageByteFormat.png);
+                                        if (y != null)snapshot.data![0] = y.buffer.asUint8List();
+                                        setState(() {
+                                          signatures = Future(() => snapshot.data!);
+                                        });
+                                      }catch(e){
+                                        log(e.toString());
+                                      }
+                                    });
+                                  }),
+                            ],
+                        );
+                      } else
+                        return const CircularProgressIndicator();
+                    }),
                   Padding(padding:const EdgeInsets.all(4),child: TextField(
                     onChanged: (text){setState(() {
                       enr = false;
@@ -154,34 +174,35 @@ class _ResponsabilitesState extends State<Responsabilites> {
                       labelText: 'Nom de l\'IAO à l\'hôpital',
                     ),
                   )),
-                  Column(
-                    children: [
-                      Text(modification[modifhop]),
-                      GestureDetector(
-                        onLongPress: ()=>setState(() {
-                          modifhop = 1;
-                          controlesKrol = NeverScrollableScrollPhysics();
-                        }),
-                        child:Container(
-                          child: SfSignaturePad(
-                            onDrawEnd:(){setState(() {
-                              modifhop = 0;
-                              controlesKrol = AlwaysScrollableScrollPhysics();
-                            });},
-                            key: _signaturePadKeyHop,
-                            backgroundColor: Colors.grey[200],
-                          ),
-                          height: 200,
-                          width: 300,
-                        ),
-                      ),
-                      ElevatedButton(
-                          child: Text("Effacer la signature"),
-                          onPressed: () async {
-                            _signaturePadKeyHop.currentState!.clear();
-                          }),
-                    ],
-                  ),
+                FutureBuilder<List<Uint8List>>(
+                    future: signatures, // a previously-obtained Future<String> or null
+                    builder: (BuildContext context, AsyncSnapshot<List<Uint8List>> snapshot) {
+                      if (snapshot.hasData && snapshot.data!=null)
+                        return Column(
+                          children: [
+                            Image.memory(snapshot.data![1].buffer.asUint8List(),height: 200,
+                            ),
+                            ElevatedButton(
+                                child: const Text("Modifier"),
+                                onPressed: () async {
+                                  await SigneToutDeSuite(context, _signaturePadKeyHop).then((value) async {
+                                    try{
+                                      final x  =  await _signaturePadKeyHop.currentState!.toImage();
+                                      final y = await x.toByteData(format: ui.ImageByteFormat.png);
+                                      if (y != null)snapshot.data![1] = y.buffer.asUint8List();
+                                      setState(() {
+                                        signatures = Future(() => snapshot.data!);
+                                      });
+                                    }catch(e){
+                                      log(e.toString());
+                                    }
+                                  });
+                                }),
+                          ],
+                        );
+                      else
+                        return const CircularProgressIndicator();
+                    }),
                   Padding(padding:const EdgeInsets.all(4),child: TextField(
                     onChanged: (text){setState(() {
                       enr = false;
@@ -190,7 +211,7 @@ class _ResponsabilitesState extends State<Responsabilites> {
                     maxLines: null,
                     controller: materiel,
                     decoration: const InputDecoration(
-                      border: const OutlineInputBorder(),
+                      border: OutlineInputBorder(),
                       labelText: 'Matériel à récupérer',
                     ),
                   )),
@@ -202,7 +223,7 @@ class _ResponsabilitesState extends State<Responsabilites> {
                     collapsedBackgroundColor: Colors.green[200],
                     iconColor: Colors.black,
                     children: <Widget>[
-                      Text("Étant entièrement et clairement informé(e) de mon état et des risques que j’encours, je déclare à"),
+                      const Text("Étant entièrement et clairement informé(e) de mon état et des risques que j’encours, je déclare à"),
                       Padding(padding:const EdgeInsets.all(4),child: TextField(
                         onChanged: (text){setState(() {
                           enr = false;
@@ -218,7 +239,7 @@ class _ResponsabilitesState extends State<Responsabilites> {
                           labelText: 'heure',
                         ),
                       )),
-                      Text("Refuser:"),
+                      const Text("Refuser:"),
                       Column(
                         children: [
                           ListTile(
@@ -226,7 +247,6 @@ class _ResponsabilitesState extends State<Responsabilites> {
                             leading: Radio<int>(
                               value: 0,
                               groupValue: prise_charge,
-                              toggleable: true,
                               onChanged: (int? value) {
                                 setState(() {
                                   enr = false;
@@ -240,7 +260,6 @@ class _ResponsabilitesState extends State<Responsabilites> {
                             leading: Radio<int>(
                               value: 1,
                               groupValue: prise_charge,
-                              toggleable: true,
                               onChanged: (int? value) {
                                 setState((){
                                   enr = false;
@@ -266,7 +285,7 @@ class _ResponsabilitesState extends State<Responsabilites> {
                               maxLines: null,
                               controller: nomV,
                               decoration: const InputDecoration(
-                                border: const OutlineInputBorder(),
+                                border: OutlineInputBorder(),
                                 labelText: 'Nom',
                               ),
                             )),
@@ -278,7 +297,7 @@ class _ResponsabilitesState extends State<Responsabilites> {
                               maxLines: null,
                               controller: prenomV,
                               decoration: const InputDecoration(
-                                border: const OutlineInputBorder(),
+                                border: OutlineInputBorder(),
                                 labelText: 'Prenom',
                               ),
                             )),
@@ -296,34 +315,35 @@ class _ResponsabilitesState extends State<Responsabilites> {
                                 labelText: 'date de naissance',
                               ),
                             )),
-                            Column(
-                              children: [
-                                Text(modification[modifV]),
-                                GestureDetector(
-                                  onLongPress: ()=>setState(() {
-                                    modifV = 1;
-                                    controlesKrol = NeverScrollableScrollPhysics();
-                                  }),
-                                  child:Container(
-                                    child: SfSignaturePad(
-                                      onDrawEnd:(){setState(() {
-                                        modifV = 0;
-                                        controlesKrol = AlwaysScrollableScrollPhysics();
-                                      });},
-                                      key: _signaturePadKeyV,
-                                      backgroundColor: Colors.grey[200],
-                                    ),
-                                    height: 200,
-                                    width: 300,
-                                  ),
-                                ),
-                                ElevatedButton(
-                                    child: Text("Effacer la signature"),
-                                    onPressed: () async {
-                                      _signaturePadKeyV.currentState!.clear();
-                                    }),
-                              ],
-                            ),
+                            FutureBuilder<List<Uint8List>>(
+                              future: signatures, // a previously-obtained Future<String> or null
+                              builder: (BuildContext context, AsyncSnapshot<List<Uint8List>> snapshot) {
+                                if (snapshot.hasData && snapshot.data!=null)
+                                  return Column(
+                                    children: [
+                                      Image.memory(snapshot.data![2].buffer.asUint8List(),height: 200,
+                                      ),
+                                      ElevatedButton(
+                                        child: const Text("Modifier"),
+                                        onPressed: () async {
+                                          await SigneToutDeSuite(context, _signaturePadKeyV).then((value) async {
+                                            try{
+                                              final x  =  await _signaturePadKeyV.currentState!.toImage();
+                                              final y = await x.toByteData(format: ui.ImageByteFormat.png);
+                                              if (y != null)snapshot.data![2] = y.buffer.asUint8List();
+                                              setState(() {
+                                                signatures = Future(() => snapshot.data!);
+                                              });
+                                            }catch(e){
+                                              log(e.toString());
+                                            }
+                                          });
+                                        }),
+                                    ],
+                                  );
+                                else
+                                  return const CircularProgressIndicator();
+                              }),
                           ]),
                       ExpansionTile(
                           title: const Text('Témoins 1'),
@@ -340,7 +360,7 @@ class _ResponsabilitesState extends State<Responsabilites> {
                               maxLines: null,
                               controller: nomT1,
                               decoration: const InputDecoration(
-                                border: const OutlineInputBorder(),
+                                border: OutlineInputBorder(),
                                 labelText: 'Nom',
                               ),
                             )),
@@ -352,7 +372,7 @@ class _ResponsabilitesState extends State<Responsabilites> {
                               maxLines: null,
                               controller: prenomT1,
                               decoration: const InputDecoration(
-                                border: const OutlineInputBorder(),
+                                border: OutlineInputBorder(),
                                 labelText: 'Prenom',
                               ),
                             )),
@@ -370,34 +390,35 @@ class _ResponsabilitesState extends State<Responsabilites> {
                                 labelText: 'date de naissance',
                               ),
                             )),
-                            Column(
-                              children: [
-                                Text(modification[modifT1]),
-                                GestureDetector(
-                                  onLongPress: ()=>setState(() {
-                                    modifT1 = 1;
-                                    controlesKrol = NeverScrollableScrollPhysics();
-                                  }),
-                                  child:Container(
-                                    child: SfSignaturePad(
-                                      onDrawEnd:(){setState(() {
-                                        modifT1 = 0;
-                                        controlesKrol = AlwaysScrollableScrollPhysics();
-                                      });},
-                                      key: _signaturePadKeyT1,
-                                      backgroundColor: Colors.grey[200],
-                                    ),
-                                    height: 200,
-                                    width: 300,
-                                  ),
-                                ),
-                                ElevatedButton(
-                                    child: Text("Effacer la signature"),
-                                    onPressed: () async {
-                                      _signaturePadKeyT1.currentState!.clear();
-                                    }),
-                              ],
-                            ),
+                            FutureBuilder<List<Uint8List>>(
+                              future: signatures, // a previously-obtained Future<String> or null
+                              builder: (BuildContext context, AsyncSnapshot<List<Uint8List>> snapshot) {
+                                if (snapshot.hasData && snapshot.data!=null)
+                                  return Column(
+                                    children: [
+                                      Image.memory(snapshot.data![3].buffer.asUint8List(),height: 200,
+                                      ),
+                                      ElevatedButton(
+                                          child: const Text("Modifier"),
+                                          onPressed: () async {
+                                            await SigneToutDeSuite(context, _signaturePadKeyT1).then((value) async {
+                                              try{
+                                                final x  =  await _signaturePadKeyT1.currentState!.toImage();
+                                                final y = await x.toByteData(format: ui.ImageByteFormat.png);
+                                                if (y != null)snapshot.data![3] = y.buffer.asUint8List();
+                                                setState(() {
+                                                  signatures = Future(() => snapshot.data!);
+                                                });
+                                              }catch(e){
+                                                log(e.toString());
+                                              }
+                                            });
+                                          }),
+                                    ],
+                                  );
+                                else
+                                  return const CircularProgressIndicator();
+                              }),
                           ]),
                       ExpansionTile(
                           title: const Text('Témoins 2'),
@@ -414,7 +435,7 @@ class _ResponsabilitesState extends State<Responsabilites> {
                               maxLines: null,
                               controller: nomT2,
                               decoration: const InputDecoration(
-                                border: const OutlineInputBorder(),
+                                border: OutlineInputBorder(),
                                 labelText: 'Nom',
                               ),
                             )),
@@ -426,7 +447,7 @@ class _ResponsabilitesState extends State<Responsabilites> {
                               maxLines: null,
                               controller: prenomT2,
                               decoration: const InputDecoration(
-                                border: const OutlineInputBorder(),
+                                border: OutlineInputBorder(),
                                 labelText: 'Prenom',
                               ),
                             )),
@@ -444,34 +465,35 @@ class _ResponsabilitesState extends State<Responsabilites> {
                                 labelText: 'date de naissance',
                               ),
                             )),
-                            Column(
-                              children: [
-                                Text(modification[modifT2]),
-                                GestureDetector(
-                                  onLongPress: ()=>setState(() {
-                                    modifT2 = 1;
-                                    controlesKrol = NeverScrollableScrollPhysics();
-                                  }),
-                                  child:Container(
-                                    child: SfSignaturePad(
-                                      onDrawEnd:(){setState(() {
-                                        modifT2 = 0;
-                                        controlesKrol = AlwaysScrollableScrollPhysics();
-                                      });},
-                                      key: _signaturePadKeyT2,
-                                      backgroundColor: Colors.grey[200],
-                                    ),
-                                    height: 200,
-                                    width: 300,
-                                  ),
-                                ),
-                                ElevatedButton(
-                                    child: Text("Effacer la signature"),
-                                    onPressed: () async {
-                                      _signaturePadKeyT2.currentState!.clear();
-                                    }),
-                              ],
-                            ),
+                            FutureBuilder<List<Uint8List>>(
+                              future: signatures, // a previously-obtained Future<String> or null
+                              builder: (BuildContext context, AsyncSnapshot<List<Uint8List>> snapshot) {
+                                if (snapshot.hasData && snapshot.data!=null)
+                                  return Column(
+                                    children: [
+                                      Image.memory(snapshot.data![4].buffer.asUint8List(),height: 200,
+                                      ),
+                                      ElevatedButton(
+                                          child: const Text("Modifier"),
+                                          onPressed: () async {
+                                            await SigneToutDeSuite(context, _signaturePadKeyT2).then((value) async {
+                                              try{
+                                                final x  =  await _signaturePadKeyT2.currentState!.toImage();
+                                                final y = await x.toByteData(format: ui.ImageByteFormat.png);
+                                                if (y != null)snapshot.data![4] = y.buffer.asUint8List();
+                                                setState(() {
+                                                  signatures = Future(() => snapshot.data!);
+                                                });
+                                              }catch(e){
+                                                log(e.toString());
+                                              }
+                                            });
+                                          }),
+                                    ],
+                                  );
+                                else
+                                  return const CircularProgressIndicator();
+                              }),
                           ]),
                     ]),
                 ExpansionTile(
@@ -488,7 +510,7 @@ class _ResponsabilitesState extends State<Responsabilites> {
                         controller: heure_poste,
                         readOnly: true,  // when true user cannot edit text
                         onTap: () async {
-                          await displayTimePicker(context, heure);
+                          await displayTimePicker(context, heure_poste);
                         },
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
@@ -503,7 +525,7 @@ class _ResponsabilitesState extends State<Responsabilites> {
                         controller: heure_renforts,
                         readOnly: true,  // when true user cannot edit text
                         onTap: () async {
-                          await displayTimePicker(context, heure);
+                          await displayTimePicker(context, heure_renforts);
                         },
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
@@ -518,7 +540,7 @@ class _ResponsabilitesState extends State<Responsabilites> {
                         controller: heure_medicalisation,
                         readOnly: true,  // when true user cannot edit text
                         onTap: () async {
-                          await displayTimePicker(context, heure);
+                          await displayTimePicker(context, heure_medicalisation);
                         },
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
@@ -533,7 +555,7 @@ class _ResponsabilitesState extends State<Responsabilites> {
                         controller: heure_evacuation,
                         readOnly: true,  // when true user cannot edit text
                         onTap: () async {
-                          await displayTimePicker(context, heure);
+                          await displayTimePicker(context, heure_evacuation);
                         },
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
@@ -548,7 +570,7 @@ class _ResponsabilitesState extends State<Responsabilites> {
                         controller: heure_hopital,
                         readOnly: true,  // when true user cannot edit text
                         onTap: () async {
-                          await displayTimePicker(context, heure);
+                          await displayTimePicker(context, heure_hopital);
                         },
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
@@ -563,7 +585,7 @@ class _ResponsabilitesState extends State<Responsabilites> {
                         controller: heure_fin,
                         readOnly: true,  // when true user cannot edit text
                         onTap: () async {
-                          await displayTimePicker(context, heure);
+                          await displayTimePicker(context, heure_fin);
                         },
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
@@ -573,7 +595,7 @@ class _ResponsabilitesState extends State<Responsabilites> {
                       )),
                     ]),
                 ExpansionTile(
-                    title: const Text('truc'),
+                    title: const Text('Issue'),
                     textColor: Colors.green[200],
                     collapsedTextColor: Colors.black,
                     collapsedBackgroundColor: Colors.green[200],
@@ -657,16 +679,12 @@ class _ResponsabilitesState extends State<Responsabilites> {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const <Widget>[
-            SizedBox(
-              width: 60,
-              height: 60,
-              child: CircularProgressIndicator(),
-            ),
-            Padding(
+          children: <Widget>[
+            const Padding(
               padding: EdgeInsets.only(top: 16),
               child: Text('Chargement...'),
             ),
+            Chargement(controller: _controller)
           ],
         ),
       );
@@ -710,94 +728,138 @@ class _ResponsabilitesState extends State<Responsabilites> {
 
     if (time != null) {
       setState(() {
-        heureC.text = "${time.hour}:${time.minute}";
+        heureC.text = time.format(context);
       });
     }
   }
 
-  Future<String> litFichier2()async{
-    //Isolate.spawn(litFichier,"ok");
-    return ("ok");
+  Future SigneToutDeSuite(context, GlobalKey<SfSignaturePadState> sig) async {
+    return await showDialog<void>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Signature'),
+            content: SizedBox(
+              height: 70.5,
+              width: 200,
+              child: SfSignaturePad(
+                key: sig,
+                backgroundColor: Colors.grey[200],
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(onPressed: ()=>sig.currentState!.clear(), child: const Text('Effacer')),
+              TextButton(
+                style: TextButton.styleFrom(
+                  textStyle: Theme.of(context).textTheme.labelLarge,
+                ),
+                child: const Text('Valider'),
+                onPressed: (){
+                    Navigator.pop(context);
+                  }
+              ),
+            ],
+          );
+        }
+    );
   }
 
-  litFichier()async{
+  litFichier() async{
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
+    final docIm = await pdi.PdfDocument.openFile(widget.chemin);
+    prefs = await SharedPreferences.getInstance();
     setState(() {
-      /*dispositif.text = (doc.form.fields[120] as PdfTextBoxField).text;
-      numeros.text = (doc.form.fields[121] as PdfTextBoxField).text;
-      equipe.text = (doc.form.fields[122] as PdfTextBoxField).text;
-      date.text = (doc.form.fields[123] as PdfTextBoxField).text;
-      heure.text = (doc.form.fields[124] as PdfTextBoxField).text;
-      num_dispositif.text =(doc.form.fields[125] as PdfTextBoxField).text;
-      motif.text = (doc.form.fields[126] as PdfTextBoxField).text;
-      adresse.text = (doc.form.fields[127] as PdfTextBoxField).text;
-      depart_equipe.text = (doc.form.fields[128] as PdfTextBoxField).text;
-      heure_depart.text = (doc.form.fields[129] as PdfTextBoxField).text;
-      sur_lieux.text = (doc.form.fields[130] as PdfTextBoxField).text;*/
+      nomResponsable.text  = (doc.form.fields[prefs.getInt("nom_responsable")??0] as PdfTextBoxField).text;
+      nomResponsableHop.text  = (doc.form.fields[prefs.getInt("nom_IAO")??0] as PdfTextBoxField).text;
+      materiel.text  = (doc.form.fields[prefs.getInt("materiel")??0] as PdfTextBoxField).text;
+      heure.text = (doc.form.fields[prefs.getInt("heure_resp")??0] as PdfTextBoxField).text;
+      prise_charge = (doc.form.fields[prefs.getInt("prise_charge")??0] as PdfRadioButtonListField).selectedIndex;
+      nomV.text = (doc.form.fields[prefs.getInt("nom_v")??0] as PdfTextBoxField).text;
+      prenomV.text = (doc.form.fields[prefs.getInt("prenom_v")??0] as PdfTextBoxField).text;
+      dateV.text = (doc.form.fields[prefs.getInt("date_v")??0] as PdfTextBoxField).text;
+      nomT1.text = (doc.form.fields[prefs.getInt("nom_t1")??0] as PdfTextBoxField).text;
+      prenomT1.text = (doc.form.fields[prefs.getInt("prenom_t1")??0] as PdfTextBoxField).text;
+      dateT1.text = (doc.form.fields[prefs.getInt("date_t1")??0] as PdfTextBoxField).text;
+      nomT2.text = (doc.form.fields[prefs.getInt("nom_t2")??0] as PdfTextBoxField).text;
+      prenomT2.text = (doc.form.fields[prefs.getInt("prenom_t2")??0] as PdfTextBoxField).text;
+      dateT2.text = (doc.form.fields[prefs.getInt("date_t2")??0] as PdfTextBoxField).text;
+      heure_poste.text = (doc.form.fields[prefs.getInt("heure_poste")??0] as PdfTextBoxField).text;
+      heure_renforts.text = (doc.form.fields[prefs.getInt("heure_renforts")??0] as PdfTextBoxField).text;
+      heure_medicalisation.text = (doc.form.fields[prefs.getInt("heure_medicalisation")??0] as PdfTextBoxField).text;
+      heure_evacuation.text = (doc.form.fields[prefs.getInt("heure_evacuation")??0] as PdfTextBoxField).text;
+      heure_hopital.text = (doc.form.fields[prefs.getInt("heure_hopital")??0] as PdfTextBoxField).text;
+      heure_fin.text = (doc.form.fields[prefs.getInt("heure_fin")??0] as PdfTextBoxField).text;
+      LSP = (doc.form.fields[prefs.getInt("LSP")??0] as PdfCheckBoxField).isChecked;
+      DCD = (doc.form.fields[prefs.getInt("DCD")??0] as PdfCheckBoxField).isChecked;
+      EVAC = (doc.form.fields[prefs.getInt("EVAC")??0] as PdfCheckBoxField).isChecked;
+      dixsept = (doc.form.fields[prefs.getInt("17")??0] as PdfCheckBoxField).isChecked;
+      quinze = (doc.form.fields[prefs.getInt("15")??0] as PdfCheckBoxField).isChecked;
+      dixhuit = (doc.form.fields[prefs.getInt("18")??0] as PdfCheckBoxField).isChecked;
     });
+    final List<Uint8List> truc = [];
+    for(int i =0; i<5;i++){
+      PdfSignatureField field = (doc.form.fields[prefs.getInt("Signature_${i+1}")??0] as PdfSignatureField);
+      final coef = doc.pages[0].size.width~/field.bounds.width;
+      await docIm.getPage(1).then(
+              (value) => value.render(x:field.bounds.left.toInt()*coef, y:field.bounds.top.toInt()*coef,fullHeight: doc.pages[0].size.height*coef, fullWidth: doc.pages[0].size.width*coef, width:field.bounds.width.toInt()*coef,height:field.bounds.height.toInt()*coef)
+              .then((imgPDF) => imgPDF.createImageDetached()
+              .then((img) => img.toByteData(format: ImageByteFormat.png))
+              .then((imgButes) => truc.add(imgButes!.buffer.asUint8List()))
+          )
+      );
+    }
+    signatures = Future(() =>  truc);
     setState(() {
       future = "ok";
     });
   }
 
-  metChampsAJour() async {/*
+  metChampsAJour() async {
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
-    for (var x = 0; x<doc.form.fields.count; x++)print(doc.form.fields[x].name);
-    (doc.form.fields[120] as PdfTextBoxField).text = dispositif.text;
-    (doc.form.fields[121] as PdfTextBoxField).text = numeros.text;
-    (doc.form.fields[122] as PdfTextBoxField).text = equipe.text;
-    (doc.form.fields[123] as PdfTextBoxField).text = date.text;
-    (doc.form.fields[124] as PdfTextBoxField).text = heure.text;
-    (doc.form.fields[125] as PdfTextBoxField).text = num_dispositif.text;
-    (doc.form.fields[126] as PdfTextBoxField).text = motif.text;
-    (doc.form.fields[127] as PdfTextBoxField).text = adresse.text;
-    (doc.form.fields[128] as PdfTextBoxField).text = depart_equipe.text;
-    (doc.form.fields[129] as PdfTextBoxField).text = heure_depart.text;
-    (doc.form.fields[130] as PdfTextBoxField).text = sur_lieux.text;
-    if(await enregistre()){
-      Officiant().enregistreFichier(widget.chemin, doc).then((value) => {
-        if (value)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistré !"),))
-        else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Une erreur est survenue :/"),))
-      });
+    (doc.form.fields[prefs.getInt("nom_responsable")??0] as PdfTextBoxField).text = nomResponsable.text;
+    (doc.form.fields[prefs.getInt("nom_IAO")??0] as PdfTextBoxField).text = nomResponsableHop.text;
+    (doc.form.fields[prefs.getInt("materiel")??0] as PdfTextBoxField).text = materiel.text;
+    (doc.form.fields[prefs.getInt("heure_resp")??0] as PdfTextBoxField).text = heure.text;
+    (doc.form.fields[prefs.getInt("prise_charge")??0] as PdfRadioButtonListField).selectedIndex = prise_charge;
+    (doc.form.fields[prefs.getInt("nom_v")??0] as PdfTextBoxField).text = nomV.text;
+    (doc.form.fields[prefs.getInt("prenom_v")??0] as PdfTextBoxField).text = prenomV.text;
+    (doc.form.fields[prefs.getInt("date_v")??0] as PdfTextBoxField).text = dateV.text;
+    (doc.form.fields[prefs.getInt("nom_t1")??0] as PdfTextBoxField).text = nomT1.text;
+    (doc.form.fields[prefs.getInt("prenom_t1")??0] as PdfTextBoxField).text = prenomT1.text;
+    (doc.form.fields[prefs.getInt("date_t1")??0] as PdfTextBoxField).text = dateT1.text;
+    (doc.form.fields[prefs.getInt("nom_t2")??0] as PdfTextBoxField).text = nomT2.text;
+    (doc.form.fields[prefs.getInt("prenom_t2")??0] as PdfTextBoxField).text = prenomT2.text;
+    (doc.form.fields[prefs.getInt("date_t2")??0] as PdfTextBoxField).text = dateT2.text;
+    (doc.form.fields[prefs.getInt("heure_poste")??0] as PdfTextBoxField).text = heure_poste.text;
+    (doc.form.fields[prefs.getInt("heure_renforts")??0] as PdfTextBoxField).text = heure_renforts.text;
+    (doc.form.fields[prefs.getInt("heure_medicalisation")??0] as PdfTextBoxField).text = heure_medicalisation.text;
+    (doc.form.fields[prefs.getInt("heure_evacuation")??0] as PdfTextBoxField).text = heure_evacuation.text;
+    (doc.form.fields[prefs.getInt("heure_hopital")??0] as PdfTextBoxField).text = heure_hopital.text;
+    (doc.form.fields[prefs.getInt("heure_fin")??0] as PdfTextBoxField).text = heure_fin.text;
+    (doc.form.fields[prefs.getInt("LSP")??0] as PdfCheckBoxField).isChecked = LSP;
+    (doc.form.fields[prefs.getInt("DCD")??0] as PdfCheckBoxField).isChecked = DCD;
+    (doc.form.fields[prefs.getInt("EVAC")??0] as PdfCheckBoxField).isChecked = EVAC;
+    (doc.form.fields[prefs.getInt("17")??0] as PdfCheckBoxField).isChecked = dixsept;
+    (doc.form.fields[prefs.getInt("15")??0] as PdfCheckBoxField).isChecked = quinze;
+    (doc.form.fields[prefs.getInt("18")??0] as PdfCheckBoxField).isChecked = dixhuit;
+    final sig = await signatures;
+    for(int i =0; i<sig.length;i++){
+      try {
+        PdfSignatureField field = (doc.form.fields[prefs.getInt("Signature_${i + 1}") ?? 0] as PdfSignatureField);
+        doc.pages[0].graphics.drawImage(
+            PdfBitmap(sig[i]), Rect.fromLTWH(
+            field.bounds.left, field.bounds.top, field.bounds.width,
+            field.bounds.height));
+      }catch(e){
+        log(e.toString());
+      }
     }
+    Officiant().enregistreFichier(widget.chemin, doc).then((value) => {
+      if (value)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistré !"),))
+      else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Une erreur est survenue :/"),))
+    });
     setState(() {
       enr = true;
-    });*/
-  }
-
-  Future<bool>enregistre()async{
-    if (widget.chemin == ""){
-      TextEditingController nomPdf = TextEditingController();
-      await showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('Enregistrer'),
-            content: ListView(shrinkWrap:true,children: [
-              const Padding(padding: EdgeInsets.all(5),
-                  child:Text('Comment souhaitez vous appeler le pdf?')),
-              TextField(
-                controller: nomPdf,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'nom',
-                ),
-              )
-            ]),
-            actions: <Widget>[
-              ElevatedButton(
-                  onPressed: () async {
-                    String x = await Officiant().nouveauChemin(nomPdf.text);
-                    if (x =="0"){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Un fichier du même nom existe déjà"),));return;};
-                    if( x == "1")ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistrement impossible"),));
-                    if (x!="1"&& x!="0")widget.chemin = x;
-                    Navigator.pop(_);
-                  },
-                  child: const Text('Enregistrer')),
-            ],
-            elevation: 24,
-          ),
-          barrierDismissible: false);
-    }
-    return true;
+    });
   }
 }

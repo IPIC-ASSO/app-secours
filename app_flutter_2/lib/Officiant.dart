@@ -1,15 +1,13 @@
+import 'dart:developer';
 import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 class Officiant{
 
-  Officiant(){}
+  Officiant();
 
   Future<PdfDocument> litFichier(String chemin, BuildContext context) async {
     final PdfDocument doc;
@@ -24,37 +22,49 @@ class Officiant{
   }
 
   Future<bool> enregistreFichier(String chemin, PdfDocument document)async{
-    if(chemin!=null){
-      print(document.form.fields.count);
-      print(chemin);
-      File(chemin).writeAsBytesSync(await document.save().catchError((err)=> print(err)));
-      return true;
-    }
-    return false;
+    File(chemin).writeAsBytesSync(await document.save().catchError((err)=> log(err.toString())));
+    document.dispose();
+    return true;
   }
 
-  Future<String> nouveauChemin(String nom_dispositif) async {
+  Future<bool> enregistreFichierTelechargement(String chemin)async{
+    File fichier = File(chemin);
     Directory? telechargements;
     if (Platform.isIOS) {
       telechargements = await getDownloadsDirectory();
     } else {
       telechargements = Directory('/storage/emulated/0/Download');
     }
-    if(telechargements!=null){
-      if (await File(telechargements.path + "/app_pro_civile/"+ nom_dispositif).exists()){
-        return "0";
-      }else{
-        return telechargements.path + "/app_pro_civile/"+ nom_dispositif+".pdf";
+    if (telechargements!=null) {
+      String chemin2 = "${telechargements.path}/app_pro_civile/${chemin.split("/").last}";
+      File fichier2 = File(chemin2);
+      fichier2.create(recursive: true);
+      Uint8List bytes = await fichier.readAsBytes();
+      await fichier2.writeAsBytes(bytes);
+      return true;
+    }
+    return false;
+  }
+
+  Future<String> nouveauChemin2(String groupe, String nom) async{
+    Directory directoire = await getExternalStorageDirectory()??await getApplicationDocumentsDirectory();
+    if (await File("${directoire.path}/pdf/$groupe/$nom.pdf").exists()){
+      return "0";
+    }else{
+      final dossier = Directory("${directoire.path}/pdf/$groupe");
+      if (!await dossier.exists()){
+        await dossier.create(recursive: true);
       }
-    }else return "1";
+      return "${directoire.path}/pdf/$groupe/$nom.pdf";
+    }
   }
 
   showLoaderDialog(BuildContext context){
     AlertDialog alert=AlertDialog(
-      content: new Row(
+      content: Row(
         children: [
-          CircularProgressIndicator(),
-          Container(margin: EdgeInsets.only(left: 7),child:Text("Loading..." )),
+          const CircularProgressIndicator(),
+          Container(margin: const EdgeInsets.only(left: 7),child:const Text("Loading..." )),
         ],),
     );
     showDialog(barrierDismissible: false,

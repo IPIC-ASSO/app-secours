@@ -1,8 +1,9 @@
-import 'dart:ui';
+import 'dart:math';
 import 'package:app_secours/Officiant.dart';
+import 'package:app_secours/charge.dart';
 import 'package:app_secours/menu.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
@@ -16,21 +17,25 @@ class Complementaire extends StatefulWidget {
   State<Complementaire> createState() => _ComplementaireState();
 }
 
-class _ComplementaireState extends State<Complementaire> {
+class _ComplementaireState extends State<Complementaire> with TickerProviderStateMixin {
 
+  late AnimationController _controller;
+  late final SharedPreferences prefs;
   bool enr = true;
   String future = "";
-
-  List<Offset> _pointOffset = List.generate(8, (index) => Offset(0, 0));
-  List<String> type_blessure = List.generate(8, (index) => "FC");
+  double largeur = 400;
+  final List<Offset> _pointOffset = List.generate(7, (index) => const Offset(0, 0));
+  List<String> type_blessure = List.generate(7, (index) => "--:--");
+  List<String> types_b = ["--:--","FO: Fracture Ouverte","FF: Fracture Fermée","DL: Douleur","DE: Déformation","B: Brûlure","H: Hémorragie","P: Plaie", "G: Gonflement"];
+  List<String> types_b_c = ["+","+ FO","+ FF","+ DL","+ DE","+ B","+ H","+ P","+ G"];
   late PointMarkerPainter peinture;
 
   //etat physique
-  List<TextEditingController> plainte = List.generate(8, (index) => TextEditingController());
-  List<TextEditingController> circonstances = List.generate(8, (index) => TextEditingController());
-  List<TextEditingController> caracteristiques = List.generate(8, (index) => TextEditingController());
-  List<TextEditingController> intensite = List.generate(8, (index) => TextEditingController());
-  List<TextEditingController> duree = List.generate(8, (index) => TextEditingController());
+  List<TextEditingController> plainte = List.generate(7, (index) => TextEditingController());
+  List<TextEditingController> circonstances = List.generate(7, (index) => TextEditingController());
+  List<TextEditingController> caracteristiques = List.generate(7, (index) => TextEditingController());
+  List<TextEditingController> intensite = List.generate(7, (index) => TextEditingController());
+  List<TextEditingController> duree = List.generate(7, (index) => TextEditingController());
   //infos medical
   TextEditingController allergies  = TextEditingController();
   TextEditingController medicaments  = TextEditingController();
@@ -44,10 +49,11 @@ class _ComplementaireState extends State<Complementaire> {
   bool asymetrie = false;
   TextEditingController glycemie  = TextEditingController();
   String unite_glycemie = "mg/dl";
+  List<String> unite = ["mg/dl","g/l","mmol/ml"];
   bool diabetique = false;
   bool insulo = false;
   TextEditingController temperature  = TextEditingController();
-  int lieu_temp = -1;
+  int lieu_temp = 0;
   bool aide_medoc = false;
   bool aide_sucre = false;
   TextEditingController morceau_sucre  = TextEditingController();
@@ -77,8 +83,20 @@ class _ComplementaireState extends State<Complementaire> {
 
   @override
   void initState() {
-    litFichier();
     super.initState();
+    litFichier();
+    _controller = AnimationController(
+        duration: const Duration(milliseconds: 2000), vsync: this)
+      ..addStatusListener((status) {
+        if(status == AnimationStatus.completed)_controller.reverse();
+        else if(status == AnimationStatus.dismissed)_controller.forward();})
+      ..forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -101,7 +119,7 @@ class _ComplementaireState extends State<Complementaire> {
   }
 
   Widget corps(){
-    if (future !=null && future == "ok"){
+    if (future == "ok"){
       return Padding(
           padding: const EdgeInsets.fromLTRB(3,8,3,3),
           child:ListView(
@@ -223,6 +241,7 @@ class _ComplementaireState extends State<Complementaire> {
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       labelText: 'Passé médicale',
+                      helperText: "antécédents, hospitalisations récentes",
                     ),
                   )),
                   Padding(padding:const EdgeInsets.all(4),child: TextField(
@@ -336,7 +355,7 @@ class _ComplementaireState extends State<Complementaire> {
                               unite_glycemie = value!;
                             });
                           },
-                          items: <String>["mg/dl","g/l","mmol/ml"].map<DropdownMenuItem<String>>((String value) {
+                          items: unite.map<DropdownMenuItem<String>>((String value) {
                             return DropdownMenuItem<String>(
                               value: value,
                               child: Text(value),
@@ -393,7 +412,7 @@ class _ComplementaireState extends State<Complementaire> {
                       leading: Radio<int>(
                         value: 0,
                         groupValue: lieu_temp,
-                        toggleable: true,
+                        
                         onChanged: (int? value) {
                           setState(() {
                             enr = false;
@@ -407,7 +426,7 @@ class _ComplementaireState extends State<Complementaire> {
                       leading: Radio<int>(
                         value: 1,
                         groupValue: lieu_temp,
-                        toggleable: true,
+                        
                         onChanged: (int? value) {
                           setState((){
                             enr = false;
@@ -421,7 +440,7 @@ class _ComplementaireState extends State<Complementaire> {
                       leading: Radio<int>(
                         value: 2,
                         groupValue: lieu_temp,
-                        toggleable: true,
+                        
                         onChanged: (int? value) {
                           setState((){
                             enr = false;
@@ -468,7 +487,8 @@ class _ComplementaireState extends State<Complementaire> {
                     enr = false;
                   }); },
                   keyboardType: TextInputType.number,
-                  controller: temperature,
+                  controller: morceau_sucre,
+                  maxLength: 2,
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
                     labelText: 'Nombre de mocreaux',
@@ -478,7 +498,6 @@ class _ComplementaireState extends State<Complementaire> {
                   onChanged: (text){setState(() {
                     enr = false;
                   }); },
-                  keyboardType: TextInputType.number,
                   controller: precisions,
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
@@ -531,7 +550,7 @@ class _ComplementaireState extends State<Complementaire> {
                 ),
                 Row(
                   children: <Widget>[
-                    Flexible(flex: 2,child:
+                    Flexible(flex: 1,child:
                     SizedBox(
                         width: 1000,
                         child:Padding(
@@ -623,7 +642,7 @@ class _ComplementaireState extends State<Complementaire> {
                 ),
               ]),
               ExpansionTile(
-              title: const Text('autre truc'),
+              title: const Text('Précisions'),
               textColor: Colors.red[200],
               collapsedTextColor: Colors.black,
               collapsedBackgroundColor: Colors.red[200],
@@ -695,7 +714,6 @@ class _ComplementaireState extends State<Complementaire> {
                   onChanged: (text){setState(() {
                     enr = false;
                   }); },
-                  keyboardType: TextInputType.number,
                   controller: produit,
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
@@ -792,16 +810,12 @@ class _ComplementaireState extends State<Complementaire> {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const <Widget>[
-            SizedBox(
-              width: 60,
-              height: 60,
-              child: CircularProgressIndicator(),
-            ),
-            Padding(
+          children: <Widget>[
+            const Padding(
               padding: EdgeInsets.only(top: 16),
               child: Text('Chargement...'),
             ),
+            Chargement(controller: _controller)
           ],
         ),
       );
@@ -815,19 +829,62 @@ class _ComplementaireState extends State<Complementaire> {
 
   litFichier()async{
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
-    /*setState(() {
-      dispositif.text = (doc.form.fields[120] as PdfTextBoxField).text;
-      numeros.text = (doc.form.fields[121] as PdfTextBoxField).text;
-      equipe.text = (doc.form.fields[122] as PdfTextBoxField).text;
-      date.text = (doc.form.fields[123] as PdfTextBoxField).text;
-      heure.text = (doc.form.fields[124] as PdfTextBoxField).text;
-      num_dispositif.text =(doc.form.fields[125] as PdfTextBoxField).text;
-      motif.text = (doc.form.fields[126] as PdfTextBoxField).text;
-      adresse.text = (doc.form.fields[127] as PdfTextBoxField).text;
-      depart_equipe.text = (doc.form.fields[128] as PdfTextBoxField).text;
-      heure_depart.text = (doc.form.fields[129] as PdfTextBoxField).text;
-      sur_lieux.text = (doc.form.fields[130] as PdfTextBoxField).text;
-    });*/
+    prefs = await SharedPreferences.getInstance();
+    Rect ref = (doc.form.fields[prefs.getInt("blessure_0")??0] as PdfTextBoxField).bounds;
+    for (int i =0; i<plainte.length;i++){
+      plainte[i].text  = (doc.form.fields[prefs.getInt("plainte_${i+1}")??0] as PdfTextBoxField).text;
+      circonstances[i].text  = (doc.form.fields[prefs.getInt("circonstances_${i+1}")??0] as PdfTextBoxField).text;
+      caracteristiques[i].text  = (doc.form.fields[prefs.getInt("caracteristiques_${i+1}")??0] as PdfTextBoxField).text;
+      intensite[i].text  = (doc.form.fields[prefs.getInt("intensite_${i+1}")??0] as PdfTextBoxField).text;
+      duree[i].text  = (doc.form.fields[prefs.getInt("duree_${i+1}")??0] as PdfTextBoxField).text;
+      final blessure = (doc.form.fields[prefs.getInt("blessure_${i+1}")??0] as PdfTextBoxField);
+      print(blessure.bounds.centerLeft);
+      print(ref.left);
+      print(blessure.name);
+      type_blessure[i] =  types_b[types_b_c.indexOf(blessure.text.isEmpty?"+":blessure.text)];
+      _pointOffset[i] = Offset(((blessure.bounds.centerLeft.dx-ref.left)/ref.width),((blessure.bounds.centerLeft.dy-ref.top)/ref.width));
+    }
+    allergies.text  = (doc.form.fields[prefs.getInt("allergies")??0] as PdfTextBoxField).text;
+    medicaments.text  = (doc.form.fields[prefs.getInt("medicaments")??0] as PdfTextBoxField).text;
+    ordonnance = (doc.form.fields[prefs.getInt("ordonnance")??0] as PdfCheckBoxField).isChecked;
+    passe_med.text  = (doc.form.fields[prefs.getInt("passe_medical")??0] as PdfTextBoxField).text;
+    le_dernier.text  = (doc.form.fields[prefs.getInt("dernier_repas")??0] as PdfTextBoxField).text;
+    evenement.text  = (doc.form.fields[prefs.getInt("evenements")??0] as PdfTextBoxField).text;
+    //etat medical
+    faiblesse = (doc.form.fields[prefs.getInt("faiblesse")??0] as PdfCheckBoxField).isChecked;
+    anomalie = (doc.form.fields[prefs.getInt("anomalie")??0] as PdfCheckBoxField).isChecked;
+    asymetrie = (doc.form.fields[prefs.getInt("asymetrie")??0] as PdfCheckBoxField).isChecked;
+    glycemie.text  = (doc.form.fields[prefs.getInt("glyc")??0] as PdfTextBoxField).text;
+    unite_glycemie = unite[max((doc.form.fields[prefs.getInt("glycemie")??0] as PdfRadioButtonListField).selectedIndex,0)];
+    diabetique = (doc.form.fields[prefs.getInt("diabetique")??0] as PdfCheckBoxField).isChecked;
+    insulo = (doc.form.fields[prefs.getInt("insulino")??0] as PdfCheckBoxField).isChecked;
+    temperature.text  = (doc.form.fields[prefs.getInt("temperature")??0] as PdfTextBoxField).text;
+    lieu_temp = (doc.form.fields[prefs.getInt("temp")??0] as PdfRadioButtonListField).selectedIndex;
+    aide_medoc = (doc.form.fields[prefs.getInt("aide_medoc")??0] as PdfCheckBoxField).isChecked;
+    aide_sucre = (doc.form.fields[prefs.getInt("aide_sucre")??0] as PdfCheckBoxField).isChecked;
+    morceau_sucre.text  = (doc.form.fields[prefs.getInt("nb_morceaux")??0] as PdfTextBoxField).text;
+    precisions.text  = (doc.form.fields[prefs.getInt("precisions")??0] as PdfTextBoxField).text;
+    trauma.text  = (doc.form.fields[prefs.getInt("mecanismes")??0] as PdfTextBoxField).text;
+    realignement = (doc.form.fields[prefs.getInt("aide_medoc")??0] as PdfCheckBoxField).isChecked;
+    echarpe = (doc.form.fields[prefs.getInt("echarpe")??0] as PdfCheckBoxField).isChecked;
+    attelle = (doc.form.fields[prefs.getInt("attelle")??0] as PdfCheckBoxField).isChecked;
+    type_attelle.text  = (doc.form.fields[prefs.getInt("type_attele")??0] as PdfTextBoxField).text;
+    matelas = (doc.form.fields[prefs.getInt("matelas")??0] as PdfCheckBoxField).isChecked;
+    ACT = (doc.form.fields[prefs.getInt("ACT")??0] as PdfCheckBoxField).isChecked;
+    collier = (doc.form.fields[prefs.getInt("collier")??0] as PdfCheckBoxField).isChecked;
+    plan = (doc.form.fields[prefs.getInt("plan")??0] as PdfCheckBoxField).isChecked;
+    //truc
+    ingestion = (doc.form.fields[prefs.getInt("ingestion")??0] as PdfCheckBoxField).isChecked;
+    inhalation = (doc.form.fields[prefs.getInt("inhalation")??0] as PdfCheckBoxField).isChecked;
+    injection = (doc.form.fields[prefs.getInt("injection")??0] as PdfCheckBoxField).isChecked;
+    projection = (doc.form.fields[prefs.getInt("projection")??0] as PdfCheckBoxField).isChecked;
+    produit.text  = (doc.form.fields[prefs.getInt("produit")??0] as PdfTextBoxField).text;
+    refroidissement = (doc.form.fields[prefs.getInt("refroidissement")??0] as PdfCheckBoxField).isChecked;
+    rincage = (doc.form.fields[prefs.getInt("rincage")??0] as PdfCheckBoxField).isChecked;
+    couverte = (doc.form.fields[prefs.getInt("couverte")??0] as PdfCheckBoxField).isChecked;
+    desinfection = (doc.form.fields[prefs.getInt("desinfection")??0] as PdfCheckBoxField).isChecked;
+    intox_op = (doc.form.fields[prefs.getInt("intox")??0] as PdfCheckBoxField).isChecked;
+
     setState(() {
       future = "ok";
     });
@@ -835,64 +892,67 @@ class _ComplementaireState extends State<Complementaire> {
 
   metChampsAJour() async {
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
-    /*for (var x = 0; x<doc.form.fields.count; x++)print(doc.form.fields[x].name);
-    (doc.form.fields[120] as PdfTextBoxField).text = dispositif.text;
-    (doc.form.fields[121] as PdfTextBoxField).text = numeros.text;
-    (doc.form.fields[122] as PdfTextBoxField).text = equipe.text;
-    (doc.form.fields[123] as PdfTextBoxField).text = date.text;
-    (doc.form.fields[124] as PdfTextBoxField).text = heure.text;
-    (doc.form.fields[125] as PdfTextBoxField).text = num_dispositif.text;
-    (doc.form.fields[126] as PdfTextBoxField).text = motif.text;
-    (doc.form.fields[127] as PdfTextBoxField).text = adresse.text;
-    (doc.form.fields[128] as PdfTextBoxField).text = depart_equipe.text;
-    (doc.form.fields[129] as PdfTextBoxField).text = heure_depart.text;
-    (doc.form.fields[130] as PdfTextBoxField).text = sur_lieux.text;*/
-    if(await enregistre()){
-      Officiant().enregistreFichier(widget.chemin, doc).then((value) => {
-        if (value)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistré !"),))
-        else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Une erreur est survenue :/"),))
-      });
+    Rect ref = (doc.form.fields[prefs.getInt("blessure_1")??0] as PdfTextBoxField).bounds;
+    for (int i =0; i<plainte.length;i++){
+      (doc.form.fields[prefs.getInt("plainte_${i+1}")??0] as PdfTextBoxField).text = plainte[i].text;
+      (doc.form.fields[prefs.getInt("circonstances_${i+1}")??0] as PdfTextBoxField).text = circonstances[i].text;
+      (doc.form.fields[prefs.getInt("caracteristiques_${i+1}")??0] as PdfTextBoxField).text = caracteristiques[i].text;
+      (doc.form.fields[prefs.getInt("intensite_${i+1}")??0] as PdfTextBoxField).text = intensite[i].text;
+      (doc.form.fields[prefs.getInt("duree_${i+1}")??0] as PdfTextBoxField).text = duree[i].text;
+      (doc.form.fields[prefs.getInt("blessure_${i+1}")??0] as PdfTextBoxField).text = types_b_c[types_b.indexOf(type_blessure[i])];
+      (doc.form.fields[prefs.getInt("blessure_${i+1}")??0] as PdfTextBoxField).bounds = Rect.fromLTWH(ref.left+(_pointOffset[i].dx)*ref.width,ref.top+(_pointOffset[i].dy)*ref.width , ref.width, ref.height);
+      print(Rect.fromLTWH(ref.left+(_pointOffset[i].dx)*ref.width,ref.top+(_pointOffset[i].dy)*ref.width , ref.width, ref.height));
+
     }
+    (doc.form.fields[prefs.getInt("allergies")??0] as PdfTextBoxField).text = allergies.text;
+    (doc.form.fields[prefs.getInt("medicaments")??0] as PdfTextBoxField).text = medicaments.text;
+    (doc.form.fields[prefs.getInt("ordonnance")??0] as PdfCheckBoxField).isChecked = ordonnance;
+    (doc.form.fields[prefs.getInt("passe_medical")??0] as PdfTextBoxField).text = passe_med.text;
+    (doc.form.fields[prefs.getInt("dernier_repas")??0] as PdfTextBoxField).text = le_dernier.text;
+    (doc.form.fields[prefs.getInt("evenements")??0] as PdfTextBoxField).text = evenement.text;
+    (doc.form.fields[prefs.getInt("faiblesse")??0] as PdfCheckBoxField).isChecked = faiblesse;
+    (doc.form.fields[prefs.getInt("anomalie")??0] as PdfCheckBoxField).isChecked = anomalie;
+    (doc.form.fields[prefs.getInt("asymetrie")??0] as PdfCheckBoxField).isChecked = asymetrie;
+    (doc.form.fields[prefs.getInt("glyc")??0] as PdfTextBoxField).text = glycemie.text;
+    (doc.form.fields[prefs.getInt("glycemie")??0] as PdfRadioButtonListField).selectedIndex = unite.indexOf(unite_glycemie);
+    (doc.form.fields[prefs.getInt("diabetique")??0] as PdfCheckBoxField).isChecked = diabetique;
+    (doc.form.fields[prefs.getInt("insulino")??0] as PdfCheckBoxField).isChecked = insulo;
+    (doc.form.fields[prefs.getInt("temperature")??0] as PdfTextBoxField).text = temperature.text;
+    (doc.form.fields[prefs.getInt("temp")??0] as PdfRadioButtonListField).selectedIndex = lieu_temp;
+    (doc.form.fields[prefs.getInt("aide_medoc")??0] as PdfCheckBoxField).isChecked = aide_medoc;
+    (doc.form.fields[prefs.getInt("aide_sucre")??0] as PdfCheckBoxField).isChecked = aide_sucre;
+    (doc.form.fields[prefs.getInt("nb_morceaux")??0] as PdfTextBoxField).text = aide_sucre?morceau_sucre.text:"";
+    (doc.form.fields[prefs.getInt("precisions")??0] as PdfTextBoxField).text = precisions.text;
+    (doc.form.fields[prefs.getInt("mecanismes")??0] as PdfTextBoxField).text = trauma.text;
+    (doc.form.fields[prefs.getInt("realignement")??0] as PdfCheckBoxField).isChecked = realignement;
+    (doc.form.fields[prefs.getInt("echarpe")??0] as PdfCheckBoxField).isChecked = echarpe;
+    (doc.form.fields[prefs.getInt("attelle")??0] as PdfCheckBoxField).isChecked = attelle;
+    (doc.form.fields[prefs.getInt("type_attele")??0] as PdfTextBoxField).text = type_attelle.text;
+    (doc.form.fields[prefs.getInt("matelas")??0] as PdfCheckBoxField).isChecked = matelas;
+    (doc.form.fields[prefs.getInt("ACT")??0] as PdfCheckBoxField).isChecked = ACT;
+    (doc.form.fields[prefs.getInt("collier")??0] as PdfCheckBoxField).isChecked = collier;
+    (doc.form.fields[prefs.getInt("plan")??0] as PdfCheckBoxField).isChecked = plan;
+    (doc.form.fields[prefs.getInt("ingestion")??0] as PdfCheckBoxField).isChecked = ingestion;
+    (doc.form.fields[prefs.getInt("inhalation")??0] as PdfCheckBoxField).isChecked = inhalation;
+    (doc.form.fields[prefs.getInt("injection")??0] as PdfCheckBoxField).isChecked = injection;
+    (doc.form.fields[prefs.getInt("projection")??0] as PdfCheckBoxField).isChecked = projection;
+    (doc.form.fields[prefs.getInt("produit")??0] as PdfTextBoxField).text = produit.text;
+    (doc.form.fields[prefs.getInt("refroidissement")??0] as PdfCheckBoxField).isChecked = refroidissement;
+    (doc.form.fields[prefs.getInt("rincage")??0] as PdfCheckBoxField).isChecked = rincage;
+    (doc.form.fields[prefs.getInt("couverte")??0] as PdfCheckBoxField).isChecked = couverte;
+    (doc.form.fields[prefs.getInt("desinfection")??0] as PdfCheckBoxField).isChecked = desinfection;
+    (doc.form.fields[prefs.getInt("intox")??0] as PdfCheckBoxField).isChecked = intox_op;
+
+    Officiant().enregistreFichier(widget.chemin, doc).then((value) => {
+      if (value)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistré !"),))
+      else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Une erreur est survenue :/"),))
+    });
+
     setState(() {
       enr = true;
     });
   }
 
-  Future<bool>enregistre()async{
-    if (widget.chemin == ""){
-      TextEditingController nomPdf = TextEditingController();
-      await showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('Enregistrer'),
-            content: ListView(shrinkWrap:true,children: [
-              const Padding(padding: EdgeInsets.all(5),
-                  child:Text('Comment souhaitez vous appeler le pdf?')),
-              TextField(
-                controller: nomPdf,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'nom',
-                ),
-              )
-            ]),
-            actions: <Widget>[
-              ElevatedButton(
-                  onPressed: () async {
-                    String x = await Officiant().nouveauChemin(nomPdf.text);
-                    if (x =="0"){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Un fichier du même nom existe déjà"),));return;};
-                    if( x == "1")ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistrement impossible"),));
-                    if (x!="1"&& x!="0")widget.chemin = x;
-                    Navigator.pop(_);
-                  },
-                  child: const Text('Enregistrer')),
-            ],
-            elevation: 24,
-          ),
-          barrierDismissible: false);
-    }
-    return true;
-  }
     Future<void> _ouvrePC(BuildContext context, int index) {
       peinture = PointMarkerPainter(_pointOffset[index]);
       return showDialog<void>(
@@ -904,11 +964,14 @@ class _ComplementaireState extends State<Complementaire> {
               onTapDown: (TapDownDetails details) {
                 // Mettre à jour les coordonnées du point lors du tap sur l'image
                 setState(() {
-                  _pointOffset[index] = details.localPosition;
-                  peinture.modif(_pointOffset[index]);
+                  _pointOffset[index] = Offset(details.localPosition.dx/largeur,details.localPosition.dy/largeur);
+                  peinture.modif(details.localPosition);
                 });
               },
-              child:Column(children:[Stack(
+              child:SizedBox(width: double.maxFinite, child: ListView(
+              shrinkWrap: true,
+              children:[
+                Stack(
                 children:[
                   Image.asset('assets/physique.png'),
                   Positioned.fill(child:CustomPaint(
@@ -917,30 +980,34 @@ class _ComplementaireState extends State<Complementaire> {
                   ),),
                 ]
               ),
-                Padding(padding:const EdgeInsets.all(4),child: DropdownButton<String>(
-                  value: type_blessure[index],
-                  elevation: 16,
-                  style: const TextStyle(color: Colors.deepPurple),
-                  underline: Container(
-                    height: 2,
-                    color: Colors.deepPurpleAccent,
-                  ),
-                  onChanged: (String? value) {
-                    // This is called when the user selects an item.
-                    setState(() {
-                      enr = false;
-                      type_blessure[index] = value!;
-                    });
-                  },
-                  items: <String>[" ","FO: Fracture Ouverte","FF: Fracture Fermée","DL: Douleur","DE: Déformation","B: Brûlure","H: Hémorragie","P"].map<DropdownMenuItem<String>>((String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Text(value),
+                Padding(padding:const EdgeInsets.all(4),child:
+                  StatefulBuilder(
+                  builder: (BuildContext context, StateSetter dropDownState){
+                  return DropdownButton<String>(
+                      value: type_blessure[index],
+                      elevation: 16,
+                      style: const TextStyle(color: Colors.deepPurple),
+                      underline: Container(
+                        height: 2,
+                        color: Colors.deepPurpleAccent,
+                      ),
+                      onChanged: (String? value) {
+                        // This is called when the user selects an item.
+                        dropDownState(() {
+                          enr = false;
+                          type_blessure[index] = value!;
+                        });
+                      },
+                      items: types_b.map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
                     );
-                  }).toList(),
-                ))
+                    })),
             ]),
-            ),
+            )),
             actions: <Widget>[
               TextButton(
                 style: TextButton.styleFrom(
@@ -954,9 +1021,13 @@ class _ComplementaireState extends State<Complementaire> {
             ],
           );
         },
-      );
+      ).whenComplete((){
+        largeur = (context.size?.width??400);
+        peinture.modif(Offset(_pointOffset[index].dx*largeur,_pointOffset[index].dy*largeur));
+      });
   }
 }
+
 class PointMarkerPainter extends ChangeNotifier implements CustomPainter {
   Offset pointOffset;
 
@@ -968,7 +1039,6 @@ class PointMarkerPainter extends ChangeNotifier implements CustomPainter {
     final paint = Paint()
       ..color = Colors.red
       ..style = PaintingStyle.fill;
-    //canvas.drawImage(Image.asset("assets/physique.png").image, Offset.zero, Paint());
     canvas.drawCircle(pointOffset, 5, paint);
   }
 

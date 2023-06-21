@@ -1,7 +1,9 @@
 import 'package:app_secours/Officiant.dart';
+import 'package:app_secours/charge.dart';
 import 'package:app_secours/menu.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 
 class Declenchement extends StatefulWidget {
@@ -14,9 +16,12 @@ class Declenchement extends StatefulWidget {
   State<Declenchement> createState() => _DeclenchementState();
 }
 
-class _DeclenchementState extends State<Declenchement> {
+class _DeclenchementState extends State<Declenchement> with TickerProviderStateMixin {
 
+  late AnimationController _controller;
+  late final SharedPreferences prefs;
   bool enr = true;
+  bool charge = false;
   String future = "";
   DateTime selectedDate = DateTime.now();
   TextEditingController dispositif  = TextEditingController();
@@ -35,6 +40,18 @@ class _DeclenchementState extends State<Declenchement> {
   void initState() {
     litFichier();
     super.initState();
+    _controller = AnimationController(
+        duration: const Duration(milliseconds: 2000), vsync: this)
+      ..addStatusListener((status) {
+        if(status == AnimationStatus.completed)_controller.reverse();
+        else if(status == AnimationStatus.dismissed)_controller.forward();})
+      ..forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -45,8 +62,14 @@ class _DeclenchementState extends State<Declenchement> {
         actions: [
             IconButton(
                 icon: const Icon(Icons.save),
-                onPressed: (){
-                  metChampsAJour();
+                onPressed: () async {
+                  setState(() {
+                    future = "";
+                  });
+                  await metChampsAJour();
+                  setState(() {
+                    future = "ok";
+                  });
                 }//_save,
             ),
         ],
@@ -57,7 +80,7 @@ class _DeclenchementState extends State<Declenchement> {
   }
 
   Widget corps(){
-    if (future !=null && future == "ok"){
+    if (future == "ok"){
       return Padding(
           padding: const EdgeInsets.fromLTRB(3,8,3,3),
           child:ListView(
@@ -147,12 +170,12 @@ class _DeclenchementState extends State<Declenchement> {
                   onChanged: (text){setState(() {
                     enr = false;
                   }); },
-                  keyboardType: TextInputType.multiline,
+                  keyboardType: TextInputType.number,
                   maxLines: null,
                   controller: num_dispositif,
                   decoration: const InputDecoration(
-                    border: const OutlineInputBorder(),
-                    labelText: 'Motif dispositif',
+                    border: OutlineInputBorder(),
+                    labelText: 'Numéros fiche',
                   ),
                 )),
                 Padding(padding:const EdgeInsets.all(4),child: TextField(
@@ -163,7 +186,7 @@ class _DeclenchementState extends State<Declenchement> {
                   maxLines: null,
                   controller: motif,
                   decoration: const InputDecoration(
-                    border: const OutlineInputBorder(),
+                    border: OutlineInputBorder(),
                     labelText: 'Motif de départ',
                   ),
                 )),
@@ -181,7 +204,7 @@ class _DeclenchementState extends State<Declenchement> {
                 ))
                 ,
                 Row(children: <Widget>[
-                  Flexible(child:
+                  Flexible(flex: 1,child:
                   SizedBox(
                       width: 1000,
                       child:Padding(padding:const EdgeInsets.all(4),child: TextField(
@@ -194,8 +217,8 @@ class _DeclenchementState extends State<Declenchement> {
                           labelText: 'départ équipe',
                         ),
                       ))
-                  ), flex: 1,),
-                  Flexible(child:
+                  ),),
+                  Flexible(flex: 1,child:
                   SizedBox(
                       width: 1000,
                       child:Padding(padding:const EdgeInsets.all(4),child: TextField(
@@ -213,7 +236,7 @@ class _DeclenchementState extends State<Declenchement> {
                           labelText: 'heure de départ',
                         ),
                       ))
-                  ), flex: 1,),
+                  ),),
                 ],
                 ),
                 Padding(padding:const EdgeInsets.all(4),child: TextField(
@@ -237,16 +260,12 @@ class _DeclenchementState extends State<Declenchement> {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const <Widget>[
-            SizedBox(
-              width: 60,
-              height: 60,
-              child: CircularProgressIndicator(),
-            ),
-            Padding(
+          children: <Widget>[
+            const Padding(
               padding: EdgeInsets.only(top: 16),
               child: Text('Chargement...'),
             ),
+            Chargement(controller: _controller)
           ],
         ),
       );
@@ -267,7 +286,7 @@ class _DeclenchementState extends State<Declenchement> {
         firstDate: DateTime(2015, 8),
         lastDate: DateTime(2101));
     if (picked != null) {
-      String formattedDate = DateFormat('yyyy-MM-dd').format(picked);
+      String formattedDate = DateFormat('dd/MM/yy').format(picked);
       setState(() {
         selectedDate = picked;
         date.text = formattedDate.toString();
@@ -278,7 +297,6 @@ class _DeclenchementState extends State<Declenchement> {
   Future displayTimePicker(BuildContext context, TextEditingController heureC) async {
     TimeOfDay heure;
     if (heureC.text!=""){
-      print(heureC.text);
       heure = TimeOfDay(hour:int.parse(heureC.text.split(":")[0]),minute: int.parse(heureC.text.split(":")[1]));
     }else{
       heure = TimeOfDay.now();
@@ -290,32 +308,34 @@ class _DeclenchementState extends State<Declenchement> {
 
     if (time != null) {
       setState(() {
-        heureC.text = "${time.hour}:${time.minute}";
+        heureC.text = time.format(context);
       });
     }
   }
 
-  Future<String> litFichier2()async{
-    //Isolate.spawn(litFichier,"ok");
-    return ("ok");
-  }
 
   litFichier()async{
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
-    print((doc.form.fields[0] as PdfTextBoxField).name);
+    prefs = await SharedPreferences.getInstance();
     setState(() {
-      dispositif.text = (doc.form.fields[0] as PdfTextBoxField).text;
-      numeros.text = (doc.form.fields[1] as PdfTextBoxField).text;
-      equipe.text = (doc.form.fields[2] as PdfTextBoxField).text;
-      date.text = (doc.form.fields[3] as PdfTextBoxField).text;
-      heure.text = (doc.form.fields[4] as PdfTextBoxField).text;
-      num_dispositif.text =(doc.form.fields[5] as PdfTextBoxField).text;
-      motif.text = (doc.form.fields[6] as PdfTextBoxField).text;
-      adresse.text = (doc.form.fields[7] as PdfTextBoxField).text;
-      depart_equipe.text = (doc.form.fields[8] as PdfTextBoxField).text;
-      heure_depart.text = (doc.form.fields[9] as PdfTextBoxField).text;
-      sur_lieux.text = (doc.form.fields[10] as PdfTextBoxField).text;
+      dispositif.text = (doc.form.fields[prefs.getInt("dispositif")??0] as PdfTextBoxField).text;
+      numeros.text = (doc.form.fields[prefs.getInt("num")??0] as PdfTextBoxField).text;
+      equipe.text = (doc.form.fields[prefs.getInt("equipe")??0] as PdfTextBoxField).text;
+      date.text = (doc.form.fields[prefs.getInt("date")??0] as PdfTextBoxField).text;
+      heure.text = (doc.form.fields[prefs.getInt("heure")??0] as PdfTextBoxField).text;
+      num_dispositif.text = (doc.form.fields[prefs.getInt("num_fiche")??0] as PdfTextBoxField).text;
+      motif.text = (doc.form.fields[prefs.getInt("motif")??0] as PdfTextBoxField).text;
+      adresse.text = (doc.form.fields[prefs.getInt("adresse")??0] as PdfTextBoxField).text;
+      depart_equipe.text = (doc.form.fields[prefs.getInt("dep_equipe")??0] as PdfTextBoxField).text;
+      heure_depart.text = (doc.form.fields[prefs.getInt("heure_dep")??0] as PdfTextBoxField).text;
+      sur_lieux.text = (doc.form.fields[prefs.getInt("heure_lieu")??0] as PdfTextBoxField).text;
     });
+    if (dispositif.text.isEmpty){
+      List<String> x = widget.chemin.split("/");
+      setState(() {
+        dispositif.text = x[x.length-2];
+      });
+    }
     setState(() {
       future = "ok";
     });
@@ -323,63 +343,23 @@ class _DeclenchementState extends State<Declenchement> {
 
   metChampsAJour() async {
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
-    for (var x = 0; x<doc.form.fields.count; x++)print(doc.form.fields[x].name);
-    (doc.form.fields[0] as PdfTextBoxField).text = dispositif.text;
-    (doc.form.fields[1] as PdfTextBoxField).text = numeros.text;
-    (doc.form.fields[2] as PdfTextBoxField).text = equipe.text;
-    (doc.form.fields[3] as PdfTextBoxField).text = date.text;
-    (doc.form.fields[4] as PdfTextBoxField).text = heure.text;
-    (doc.form.fields[5] as PdfTextBoxField).text = num_dispositif.text;
-    (doc.form.fields[6] as PdfTextBoxField).text = motif.text;
-    (doc.form.fields[7] as PdfTextBoxField).text = adresse.text;
-    (doc.form.fields[8] as PdfTextBoxField).text = depart_equipe.text;
-    (doc.form.fields[9] as PdfTextBoxField).text = heure_depart.text;
-    (doc.form.fields[10] as PdfTextBoxField).text = sur_lieux.text;
-    if(await enregistre()){
-      Officiant().enregistreFichier(widget.chemin, doc).then((value) => {
-        if (value)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistré !"),))
-        else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Une erreur est survenue :/"),))
-      });
-    }
+    (doc.form.fields[prefs.getInt("dispositif")??0] as PdfTextBoxField).text = dispositif.text;
+    (doc.form.fields[prefs.getInt("num")??0] as PdfTextBoxField).text = numeros.text;
+    (doc.form.fields[prefs.getInt("equipe")??0] as PdfTextBoxField).text = equipe.text;
+    (doc.form.fields[prefs.getInt("date")??0] as PdfTextBoxField).text = date.text;
+    (doc.form.fields[prefs.getInt("heure")??0] as PdfTextBoxField).text = heure.text;
+    (doc.form.fields[prefs.getInt("num_fiche")??0] as PdfTextBoxField).text = num_dispositif.text;
+    (doc.form.fields[prefs.getInt("motif")??0] as PdfTextBoxField).text = motif.text;
+    (doc.form.fields[prefs.getInt("adresse")??0] as PdfTextBoxField).text = adresse.text;
+    (doc.form.fields[prefs.getInt("dep_equipe")??0] as PdfTextBoxField).text = depart_equipe.text;
+    (doc.form.fields[prefs.getInt("heure_dep")??0] as PdfTextBoxField).text = heure_depart.text;
+    (doc.form.fields[prefs.getInt("heure_lieu")??0] as PdfTextBoxField).text = sur_lieux.text;
+    Officiant().enregistreFichier(widget.chemin, doc).then((value) => {
+      if (value)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistré !"),))
+      else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Une erreur est survenue :/"),))
+    });
     setState(() {
       enr = true;
     });
-  }
-
-  Future<bool>enregistre()async{
-    if (widget.chemin == ""){
-      TextEditingController nomPdf = TextEditingController();
-      nomPdf.text = dispositif.text;
-      await showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('Enregistrer'),
-            content: ListView(shrinkWrap:true,children: [
-              const Padding(padding: EdgeInsets.all(5),
-                  child:Text('Comment souhaitez vous appeler le pdf?')),
-              TextField(
-                controller: nomPdf,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'nom',
-                ),
-              )
-            ]),
-            actions: <Widget>[
-              ElevatedButton(
-                  onPressed: () async {
-                    String x = await Officiant().nouveauChemin(nomPdf.text);
-                    if (x =="0"){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Un fichier du même nom existe déjà"),));return;};
-                    if( x == "1")ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistrement impossible"),));
-                    if (x!="1"&& x!="0")widget.chemin = x;
-                    Navigator.pop(_);
-                  },
-                  child: const Text('Enregistrer')),
-            ],
-            elevation: 24,
-          ),
-          barrierDismissible: false);
-    }
-    return true;
   }
 }

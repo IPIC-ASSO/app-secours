@@ -1,7 +1,8 @@
+import 'package:app_secours/charge.dart';
 import 'package:app_secours/menu.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import 'package:intl/intl.dart';
 
@@ -17,8 +18,10 @@ class Identite extends StatefulWidget {
   State<Identite> createState() => _IdentiteState();
 }
 
-class _IdentiteState extends State<Identite> {
+class _IdentiteState extends State<Identite> with TickerProviderStateMixin {
 
+  late AnimationController _controller;
+  late final SharedPreferences prefs;
   bool enr = true;
   String future = "";
   DateTime selectedDate = DateTime.now();
@@ -38,6 +41,18 @@ class _IdentiteState extends State<Identite> {
   void initState() {
     litFichier();
     super.initState();
+    _controller = AnimationController(
+        duration: const Duration(milliseconds: 2000), vsync: this)
+      ..addStatusListener((status) {
+        if(status == AnimationStatus.completed)_controller.reverse();
+        else if(status == AnimationStatus.dismissed)_controller.forward();})
+      ..forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -60,7 +75,7 @@ class _IdentiteState extends State<Identite> {
   }
 
   Widget corps(){
-    if (future !=null && future == "ok"){
+    if (future == "ok"){
       return Padding(
           padding: const EdgeInsets.fromLTRB(3,8,3,3),
           child:ListView(
@@ -160,6 +175,7 @@ class _IdentiteState extends State<Identite> {
                           enr = false;
                         }); },
                         controller: CP,
+                        keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                           labelText: 'CP',
@@ -222,16 +238,12 @@ class _IdentiteState extends State<Identite> {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const <Widget>[
-            SizedBox(
-              width: 60,
-              height: 60,
-              child: CircularProgressIndicator(),
-            ),
-            Padding(
+          children: <Widget>[
+            const Padding(
               padding: EdgeInsets.only(top: 16),
               child: Text('Chargement...'),
             ),
+            Chargement(controller: _controller)
           ],
         ),
       );
@@ -252,7 +264,7 @@ class _IdentiteState extends State<Identite> {
         firstDate: DateTime(2015, 8),
         lastDate: DateTime(2101));
     if (picked != null) {
-      String formattedDate = DateFormat('yyyy-MM-dd').format(picked);
+      String formattedDate = DateFormat('dd/MM/yy').format(picked);
       setState(() {
         selectedDate = picked;
         date.text = formattedDate.toString();
@@ -260,44 +272,21 @@ class _IdentiteState extends State<Identite> {
     }
   }
 
-  Future displayTimePicker(BuildContext context, TextEditingController heureC) async {
-    TimeOfDay heure;
-    if (heureC.text!=""){
-      print(heureC.text);
-      heure = TimeOfDay(hour:int.parse(heureC.text.split(":")[0]),minute: int.parse(heureC.text.split(":")[1]));
-    }else{
-      heure = TimeOfDay.now();
-    }
-    var time = await showTimePicker(
-        context: context,
-        initialTime: heure
-    );
-
-    if (time != null) {
-      setState(() {
-        heureC.text = "${time.hour}:${time.minute}";
-      });
-    }
-  }
-
-  Future<String> litFichier2()async{
-    //Isolate.spawn(litFichier,"ok");
-    return ("ok");
-  }
-
   litFichier()async{
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
+    prefs = await SharedPreferences.getInstance();
     setState(() {
-      nomPrenom.text = (doc.form.fields[0] as PdfTextBoxField).text;
-      nomFille.text = (doc.form.fields[1] as PdfTextBoxField).text;
-      date.text = (doc.form.fields[2] as PdfTextBoxField).text;
-      lieuNez.text = (doc.form.fields[3] as PdfTextBoxField).text;
-      adresse.text = (doc.form.fields[4] as PdfTextBoxField).text;
-      CP.text = (doc.form.fields[5] as PdfTextBoxField).text;
-      ville.text = (doc.form.fields[6] as PdfTextBoxField).text;
-      tel.text = (doc.form.fields[7] as PdfTextBoxField).text;
-      qui.text = (doc.form.fields[8] as PdfTextBoxField).text;
-      telQui.text = (doc.form.fields[9] as PdfTextBoxField).text;
+      nomPrenom.text = (doc.form.fields[prefs.getInt("nom_prenom")??0] as PdfTextBoxField).text;
+      nomFille.text = (doc.form.fields[prefs.getInt("nom_fille")??0] as PdfTextBoxField).text;
+      date.text = (doc.form.fields[prefs.getInt("date_naissance")??0] as PdfTextBoxField).text;
+      lieuNez.text = (doc.form.fields[prefs.getInt("lieu_naissance")??0] as PdfTextBoxField).text;
+      dossard.text = (doc.form.fields[prefs.getInt("dossard")??0] as PdfTextBoxField).text;
+      adresse.text = (doc.form.fields[prefs.getInt("adresse_v")??0] as PdfTextBoxField).text;
+      CP.text = (doc.form.fields[prefs.getInt("CP")??0] as PdfTextBoxField).text;
+      ville.text = (doc.form.fields[prefs.getInt("ville")??0] as PdfTextBoxField).text;
+      tel.text = (doc.form.fields[prefs.getInt("tel")??0] as PdfTextBoxField).text;
+      qui.text = (doc.form.fields[prefs.getInt("qui_prevenir")??0] as PdfTextBoxField).text;
+      telQui.text = (doc.form.fields[prefs.getInt("tel_prevenir")??0] as PdfTextBoxField).text;
     });
     setState(() {
       future = "ok";
@@ -306,60 +295,27 @@ class _IdentiteState extends State<Identite> {
 
   metChampsAJour() async {
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
-    (doc.form.fields[0] as PdfTextBoxField).text = nomPrenom.text;
-    (doc.form.fields[1] as PdfTextBoxField).text = nomFille.text;
-    (doc.form.fields[2] as PdfTextBoxField).text = date.text;
-    (doc.form.fields[3] as PdfTextBoxField).text = lieuNez.text;
-    (doc.form.fields[4] as PdfTextBoxField).text = adresse.text;
-    (doc.form.fields[5] as PdfTextBoxField).text = CP.text;
-    (doc.form.fields[6] as PdfTextBoxField).text = ville.text;
-    (doc.form.fields[7] as PdfTextBoxField).text = tel.text;
-    (doc.form.fields[8] as PdfTextBoxField).text = qui.text;
-    (doc.form.fields[9] as PdfTextBoxField).text = telQui.text;
-    if(await enregistre()){
-      Officiant().enregistreFichier(widget.chemin, doc).then((value) => {
-        if (value)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistré !"),))
-        else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Une erreur est survenue :/"),))
-      });
-    }
+    (doc.form.fields[prefs.getInt("nom_prenom")??0] as PdfTextBoxField).text = nomPrenom.text;
+    (doc.form.fields[prefs.getInt("nom_fille")??0] as PdfTextBoxField).text = nomFille.text;
+    (doc.form.fields[prefs.getInt("date_naissance")??0] as PdfTextBoxField).text = date.text;
+    (doc.form.fields[prefs.getInt("lieu_naissance")??0] as PdfTextBoxField).text = lieuNez.text;
+    (doc.form.fields[prefs.getInt("dossard")??0] as PdfTextBoxField).text = dossard.text;
+    (doc.form.fields[prefs.getInt("adresse_v")??0] as PdfTextBoxField).text = adresse.text;
+    (doc.form.fields[prefs.getInt("CP")??0] as PdfTextBoxField).text = CP.text;
+    (doc.form.fields[prefs.getInt("ville")??0] as PdfTextBoxField).text = ville.text;
+    (doc.form.fields[prefs.getInt("tel")??0] as PdfTextBoxField).text = tel.text;
+    (doc.form.fields[prefs.getInt("qui_prevenir")??0] as PdfTextBoxField).text = qui.text;
+    (doc.form.fields[prefs.getInt("tel_prevenir")??0] as PdfTextBoxField).text = telQui.text;
+
+    Officiant().enregistreFichier(widget.chemin, doc).then((value) => {
+      if (value)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistré !"),))
+      else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Une erreur est survenue :/"),))
+    });
+
     setState(() {
       enr = true;
     });
   }
 
-  Future<bool>enregistre()async{
-    if (widget.chemin == ""){
-      TextEditingController nomPdf = TextEditingController();
-      await showDialog(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('Enregistrer'),
-            content: ListView(shrinkWrap:true,children: [
-              const Padding(padding: EdgeInsets.all(5),
-                  child:Text('Comment souhaitez vous appeler le pdf?')),
-              TextField(
-                controller: nomPdf,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'nom',
-                ),
-              )
-            ]),
-            actions: <Widget>[
-              ElevatedButton(
-                  onPressed: () async {
-                    String x = await Officiant().nouveauChemin(nomPdf.text);
-                    if (x =="0"){ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Un fichier du même nom existe déjà"),));return;};
-                    if( x == "1")ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistrement impossible"),));
-                    if (x!="1"&& x!="0")widget.chemin = x;
-                    Navigator.pop(_);
-                  },
-                  child: const Text('Enregistrer')),
-            ],
-            elevation: 24,
-          ),
-          barrierDismissible: false);
-    }
-    return true;
-  }
+  //TODO: remplir dispositif,
 }
