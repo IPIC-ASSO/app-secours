@@ -134,6 +134,7 @@ class _VitalState extends State<Vital> with TickerProviderStateMixin {
   }
 
   Widget corps(){
+    List<int> codes = [2,1,2,2,0];//0: check; 1:texte; 2:texte nombre; 3
     if (future == "ok"){
       return ListView(
         children: <Widget>[
@@ -1762,7 +1763,6 @@ class _VitalState extends State<Vital> with TickerProviderStateMixin {
                       child: Divider()
                   ),
                 ]),
-
             collapsedTextColor: Colors.black,
             collapsedBackgroundColor: Colors.grey[200],
             iconColor: Colors.black,
@@ -1772,7 +1772,6 @@ class _VitalState extends State<Vital> with TickerProviderStateMixin {
                 leading: Radio<int>(
                   value: 0,
                   groupValue: position,
-                  
                   onChanged: (int? value) {
                     setState(() {
                       enr=false;
@@ -1785,7 +1784,6 @@ class _VitalState extends State<Vital> with TickerProviderStateMixin {
                 title: const Text('demi-assis'),
                 leading: Radio<int>(
                   value: 1,
-                  
                   groupValue: position,
                   onChanged: (int? value) {
                     setState(() {
@@ -1799,7 +1797,6 @@ class _VitalState extends State<Vital> with TickerProviderStateMixin {
                 title: const Text('assis'),
                 leading: Radio<int>(
                   value: 2,
-                  
                   groupValue: position,
                   onChanged: (int? value) {
                     setState(() {
@@ -1813,7 +1810,6 @@ class _VitalState extends State<Vital> with TickerProviderStateMixin {
                 title: const Text('allongée jambes relevées'),
                 leading: Radio<int>(
                   value: 3,
-                  
                   groupValue: position,
                   onChanged: (int? value) {
                     setState(() {
@@ -1827,7 +1823,6 @@ class _VitalState extends State<Vital> with TickerProviderStateMixin {
                 title: const Text('autre:'),
                 leading: Radio<int>(
                   value: 4,
-                  
                   groupValue: position,
                   onChanged: (int? value) {
                     setState(() {
@@ -1975,6 +1970,10 @@ class _VitalState extends State<Vital> with TickerProviderStateMixin {
   }
 
   metChampsAJour() async {
+    setState(() {
+      future="";
+    });
+    await Future.delayed(Duration(milliseconds: 1));
     doc = await Officiant().litFichier(widget.chemin, context);
     (doc.form.fields[prefs.getInt("arreter")??0] as PdfCheckBoxField).isChecked = arreter;
     (doc.form.fields[prefs.getInt("pansement")??0] as PdfCheckBoxField).isChecked = pansement_imb;
@@ -2044,10 +2043,7 @@ class _VitalState extends State<Vital> with TickerProviderStateMixin {
     });
     setState(() {
       enr = true;
+      future="ok";
     });
   }
-
-
-  //TODO:vérifier enregistrement pour les radios group
-  //TODO:score de Glasgow
 }

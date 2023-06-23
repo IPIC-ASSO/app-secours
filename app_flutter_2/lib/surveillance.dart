@@ -558,8 +558,11 @@ class _SurveillanceState extends State<Surveillance> with TickerProviderStateMix
   }
 
   metChampsAJour() async {
+    setState(() {
+      future="";
+    });
+    await Future.delayed(Duration(milliseconds: 1));
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
-
     (doc.form.fields[prefs.getInt("surveillance_1")??0] as PdfTextBoxField).text = evolution.text;
     (doc.form.fields[prefs.getInt("surveillance_2")??0] as PdfTextBoxField).text = evolution2.text;
     (doc.form.fields[prefs.getInt("heure_surveillance1")??0] as PdfTextBoxField).text = heure1.text;
@@ -586,15 +589,13 @@ class _SurveillanceState extends State<Surveillance> with TickerProviderStateMix
     (doc.form.fields[prefs.getInt("glycemie_surveillance2")??0] as PdfTextBoxField).text = glycemie2.text;
     (doc.form.fields[prefs.getInt("unite_surveillance1")??0] as PdfRadioButtonListField).selectedIndex = unite.indexOf(unite_glycemie1);
     (doc.form.fields[prefs.getInt("unite_surveillance2")??0] as PdfRadioButtonListField).selectedIndex = unite.indexOf(unite_glycemie2);
-
-
-
     Officiant().enregistreFichier(widget.chemin, doc).then((value) => {
       if (value)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Enregistré !"),))
       else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Une erreur est survenue :/"),))
     });
     setState(() {
       enr = true;
+      future="ok";
     });
   }
 }

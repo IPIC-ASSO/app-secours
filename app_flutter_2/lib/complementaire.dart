@@ -27,7 +27,7 @@ class _ComplementaireState extends State<Complementaire> with TickerProviderStat
   final List<Offset> _pointOffset = List.generate(7, (index) => const Offset(0, 0));
   List<String> type_blessure = List.generate(7, (index) => "--:--");
   List<String> types_b = ["--:--","FO: Fracture Ouverte","FF: Fracture Fermée","DL: Douleur","DE: Déformation","B: Brûlure","H: Hémorragie","P: Plaie", "G: Gonflement"];
-  List<String> types_b_c = ["+","+ FO","+ FF","+ DL","+ DE","+ B","+ H","+ P","+ G"];
+  List<String> types_b_c = ["","FO","FF","DL","DE","B","H","P","G"];
   late PointMarkerPainter peinture;
 
   //etat physique
@@ -822,15 +822,11 @@ class _ComplementaireState extends State<Complementaire> with TickerProviderStat
     }
   }
 
-  Future<String> litFichier2()async{
-    //Isolate.spawn(litFichier,"ok");
-    return ("ok");
-  }
-
   litFichier()async{
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
     prefs = await SharedPreferences.getInstance();
     Rect ref = (doc.form.fields[prefs.getInt("blessure_0")??0] as PdfTextBoxField).bounds;
+    print(ref.left);
     for (int i =0; i<plainte.length;i++){
       plainte[i].text  = (doc.form.fields[prefs.getInt("plainte_${i+1}")??0] as PdfTextBoxField).text;
       circonstances[i].text  = (doc.form.fields[prefs.getInt("circonstances_${i+1}")??0] as PdfTextBoxField).text;
@@ -839,10 +835,23 @@ class _ComplementaireState extends State<Complementaire> with TickerProviderStat
       duree[i].text  = (doc.form.fields[prefs.getInt("duree_${i+1}")??0] as PdfTextBoxField).text;
       final blessure = (doc.form.fields[prefs.getInt("blessure_${i+1}")??0] as PdfTextBoxField);
       print(blessure.bounds.centerLeft);
-      print(ref.left);
+
+      type_blessure[i] =  types_b[types_b_c.indexOf(blessure.text.isEmpty?"":blessure.text.replaceAll("+ ${i+1}.", ""))];
+      final double decalage1;
+      final double decalage2;
+      if(blessure.bounds.centerLeft.dy-ref.top>ref.height){
+        decalage1 = 1;
+        decalage2 = ref.height;
+      }
+      else {
+        decalage1 = 0;
+        decalage2 = 0;
+      }
+
+      _pointOffset[i] = Offset(((blessure.bounds.centerLeft.dx+3-ref.left)/ref.width +decalage1),((blessure.bounds.centerLeft.dy-ref.top -decalage2)/ref.width));
+      print(_pointOffset[i]);
       print(blessure.name);
-      type_blessure[i] =  types_b[types_b_c.indexOf(blessure.text.isEmpty?"+":blessure.text)];
-      _pointOffset[i] = Offset(((blessure.bounds.centerLeft.dx-ref.left)/ref.width),((blessure.bounds.centerLeft.dy-ref.top)/ref.width));
+
     }
     allergies.text  = (doc.form.fields[prefs.getInt("allergies")??0] as PdfTextBoxField).text;
     medicaments.text  = (doc.form.fields[prefs.getInt("medicaments")??0] as PdfTextBoxField).text;
@@ -891,18 +900,28 @@ class _ComplementaireState extends State<Complementaire> with TickerProviderStat
   }
 
   metChampsAJour() async {
+    setState(() {
+      future="";
+    });
+    await Future.delayed(Duration(milliseconds: 1));
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
-    Rect ref = (doc.form.fields[prefs.getInt("blessure_1")??0] as PdfTextBoxField).bounds;
+    Rect ref = (doc.form.fields[prefs.getInt("blessure_0")??0] as PdfTextBoxField).bounds;
     for (int i =0; i<plainte.length;i++){
       (doc.form.fields[prefs.getInt("plainte_${i+1}")??0] as PdfTextBoxField).text = plainte[i].text;
       (doc.form.fields[prefs.getInt("circonstances_${i+1}")??0] as PdfTextBoxField).text = circonstances[i].text;
       (doc.form.fields[prefs.getInt("caracteristiques_${i+1}")??0] as PdfTextBoxField).text = caracteristiques[i].text;
       (doc.form.fields[prefs.getInt("intensite_${i+1}")??0] as PdfTextBoxField).text = intensite[i].text;
       (doc.form.fields[prefs.getInt("duree_${i+1}")??0] as PdfTextBoxField).text = duree[i].text;
-      (doc.form.fields[prefs.getInt("blessure_${i+1}")??0] as PdfTextBoxField).text = types_b_c[types_b.indexOf(type_blessure[i])];
-      (doc.form.fields[prefs.getInt("blessure_${i+1}")??0] as PdfTextBoxField).bounds = Rect.fromLTWH(ref.left+(_pointOffset[i].dx)*ref.width,ref.top+(_pointOffset[i].dy)*ref.width , ref.width, ref.height);
-      print(Rect.fromLTWH(ref.left+(_pointOffset[i].dx)*ref.width,ref.top+(_pointOffset[i].dy)*ref.width , ref.width, ref.height));
-
+      (doc.form.fields[prefs.getInt("blessure_${i+1}")??0] as PdfTextBoxField).text = _pointOffset[i].dx<0.1?"":"+ ${i+1}.${types_b_c[types_b.indexOf(type_blessure[i])]}";
+      final Rect rect;
+      if(_pointOffset[i].dx<1){
+        rect = Rect.fromLTWH(ref.left-3+(_pointOffset[i].dx)*ref.width,ref.top-ref.height/16+(_pointOffset[i].dy)*ref.width, ref.width, ref.height/8);
+        print(rect);
+      }else{
+        print("1");
+        rect = Rect.fromLTWH(ref.left-3+(_pointOffset[i].dx-1)*ref.width,ref.top+ref.height-ref.height/16+(_pointOffset[i].dy)*ref.width , ref.width, ref.height/8);
+      }
+      (doc.form.fields[prefs.getInt("blessure_${i+1}")??0] as PdfTextBoxField).bounds = rect;
     }
     (doc.form.fields[prefs.getInt("allergies")??0] as PdfTextBoxField).text = allergies.text;
     (doc.form.fields[prefs.getInt("medicaments")??0] as PdfTextBoxField).text = medicaments.text;
@@ -949,29 +968,38 @@ class _ComplementaireState extends State<Complementaire> with TickerProviderStat
     });
 
     setState(() {
+      future="ok";
       enr = true;
     });
   }
 
     Future<void> _ouvrePC(BuildContext context, int index) {
+      GlobalKey porte = GlobalKey();
       peinture = PointMarkerPainter(_pointOffset[index]);
       return showDialog<void>(
         context: context,
         builder: (BuildContext context) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            final double lar = (porte.currentContext!.size!.width)/2;
+            peinture.modif(Offset(_pointOffset[index].dx*lar,_pointOffset[index].dy*lar));
+          });
           return AlertDialog(
+            contentPadding: EdgeInsets.all(20),
             title: const Text('Localisation de la blessure'),
             content: GestureDetector(
               onTapDown: (TapDownDetails details) {
-                // Mettre à jour les coordonnées du point lors du tap sur l'image
+                final double lar = (porte.currentContext!.size!.width)/2;
                 setState(() {
-                  _pointOffset[index] = Offset(details.localPosition.dx/largeur,details.localPosition.dy/largeur);
+                  _pointOffset[index] = Offset(details.localPosition.dx/lar,details.localPosition.dy/lar);
+                  print(_pointOffset[index]);
                   peinture.modif(details.localPosition);
                 });
               },
-              child:SizedBox(width: double.maxFinite, child: ListView(
+              child:SizedBox(child: ListView(
               shrinkWrap: true,
               children:[
                 Stack(
+                  key: porte,
                 children:[
                   Image.asset('assets/physique.png'),
                   Positioned.fill(child:CustomPaint(
@@ -1021,10 +1049,7 @@ class _ComplementaireState extends State<Complementaire> with TickerProviderStat
             ],
           );
         },
-      ).whenComplete((){
-        largeur = (context.size?.width??400);
-        peinture.modif(Offset(_pointOffset[index].dx*largeur,_pointOffset[index].dy*largeur));
-      });
+      );
   }
 }
 

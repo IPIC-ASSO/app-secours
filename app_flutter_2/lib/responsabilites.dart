@@ -815,6 +815,10 @@ class _ResponsabilitesState extends State<Responsabilites> with TickerProviderSt
   }
 
   metChampsAJour() async {
+    setState(() {
+      future="";
+    });
+    await Future.delayed(Duration(milliseconds: 1));
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
     (doc.form.fields[prefs.getInt("nom_responsable")??0] as PdfTextBoxField).text = nomResponsable.text;
     (doc.form.fields[prefs.getInt("nom_IAO")??0] as PdfTextBoxField).text = nomResponsableHop.text;
@@ -860,6 +864,7 @@ class _ResponsabilitesState extends State<Responsabilites> with TickerProviderSt
     });
     setState(() {
       enr = true;
+      future="ok";
     });
   }
 }

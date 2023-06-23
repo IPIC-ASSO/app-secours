@@ -301,7 +301,7 @@ class _ListeDispositifsState extends State<ListeDispositifs> with TickerProvider
                         keyboardType: TextInputType.number,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
-                          labelText: 'Feuille numéros: ',
+                          labelText: 'Numéro de la victime: ',
                         ),
                       ),),
                     Text(txt),

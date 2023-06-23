@@ -337,11 +337,16 @@ class _DeclenchementState extends State<Declenchement> with TickerProviderStateM
       });
     }
     setState(() {
+
       future = "ok";
     });
   }
 
   metChampsAJour() async {
+    setState(() {
+      future="";
+    });
+    await Future.delayed(Duration(milliseconds: 1));
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
     (doc.form.fields[prefs.getInt("dispositif")??0] as PdfTextBoxField).text = dispositif.text;
     (doc.form.fields[prefs.getInt("num")??0] as PdfTextBoxField).text = numeros.text;
@@ -359,6 +364,7 @@ class _DeclenchementState extends State<Declenchement> with TickerProviderStateM
       else ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Une erreur est survenue :/"),))
     });
     setState(() {
+      future="ok";
       enr = true;
     });
   }

@@ -59,6 +59,13 @@ class Officiant{
     }
   }
 
+  Future suprDirectoire(String disp)async{
+    Directory directoire = await getExternalStorageDirectory()??await getApplicationDocumentsDirectory();
+    if (await Directory("${directoire.path}/pdf/$disp").exists()){
+      await Directory("${directoire.path}/pdf/$disp").delete(recursive: true);
+    }
+  }
+
   showLoaderDialog(BuildContext context){
     AlertDialog alert=AlertDialog(
       content: Row(

@@ -51,8 +51,8 @@ class _PartagerState extends State<Partager> with TickerProviderStateMixin {
       padding: const EdgeInsets.fromLTRB(3,8,3,3),
       child:ListView(
       children: [
-        const Icon(Icons.settings_input_composite_outlined),
-        const Center(child:Text("En chantier")),
+        //const Icon(Icons.settings_input_composite_outlined),
+        //const Center(child:Text("En chantier")),
         Padding(
           padding: const EdgeInsets.all(4),
           child: ElevatedButton(

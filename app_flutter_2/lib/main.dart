@@ -46,7 +46,8 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
 
   late AnimationController _controller;
-  Map<String,String> fichiersDispositifs = {}; //clé: dispositif | valeur: chemin fichier
+  bool charge = true;
+  late Future<Map<String,String>> listedispositifs;
   
   @override
   void initState() {
@@ -57,6 +58,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         if(status == AnimationStatus.completed)_controller.reverse();
         else if(status == AnimationStatus.dismissed)_controller.forward();})
       ..forward();
+    listedispositifs= litFichiers();
   }
 
   @override
@@ -73,11 +75,11 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         title: const Text('Liste des dispositifs'),
       ),
       body:FutureBuilder<Map<String,String>>(
-        future: litFichiers(),
+        future: listedispositifs,
         builder: (BuildContext context, AsyncSnapshot<Map<String,String>> snapshot) {
           _controller.forward();
           List<Widget> children;
-          if (snapshot.hasData) {
+          if (snapshot.hasData && !charge) {
             _controller.stop();
             if (snapshot.data?.isEmpty??true){
               children = <Widget>[
@@ -132,7 +134,12 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ListeDispositifs(groupe: "",))),
+        onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ListeDispositifs(groupe: "",))).then((value) {
+          setState(() {
+            charge = true;
+            listedispositifs = litFichiers();
+          });
+        }),
         child: const Icon(Icons.add),
       ),
     );
@@ -152,6 +159,9 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     for (FileSystemEntity dossier in listeDossiers) {
       if(dossier is Directory) dispositifs[dossier.path] = dossier.path.split("/").last;
     }
+    setState(() {
+      charge = false;
+    });
     return dispositifs;
   }
 
@@ -174,12 +184,13 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         padding: const EdgeInsets.all(10),
         child: Row(
           children: [
-            const Icon(
+            Flexible(flex:0,child: const Icon(
               Icons.folder_open,
               color: Colors.blue,
               size: 60,
-            ),
-            Text(disp, textAlign: TextAlign.center,)
+            ),),
+            Expanded(flex:1,child: Text(disp, textAlign: TextAlign.center,),),
+            Flexible(flex:0,child:IconButton(onPressed: ()=>confirmeSupr(disp), icon: Icon(Icons.delete))),
           ],
         ),
       )
@@ -204,5 +215,24 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         prefs.setInt(doc.form.fields[x].name??"erreur", x);
       }
     }
+  }
+
+  confirmeSupr(String disp) {
+    return showDialog<void>(
+        context: context,
+        builder: (BuildContext context) {
+      return AlertDialog(
+          title: const Text('Suppresion'),
+          content: Text("Voulez vous vraiment supprimer ce dispositif? (${disp})?"),
+          actions: <Widget>[
+            TextButton(onPressed: ()=>Navigator.of(context).pop(), child: Text("Annuler")),
+            TextButton(onPressed: () async{
+              Officiant().suprDirectoire(disp).onError((error, stackTrace) => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Une erreur est survenue"),)));
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Supprimé"),));
+              Navigator.of(context).pop();
+              listedispositifs = litFichiers();
+            }, child: Text("Supprimer")),
+        ],
+      );});
   }
 }

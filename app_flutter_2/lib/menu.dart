@@ -289,8 +289,8 @@ class _MenuState extends State<Menu> with SingleTickerProviderStateMixin {
           icon: const Icon(
             Icons.info,
           ),
-          applicationIcon: Tab(icon: new Image.asset("assets/IPIC_ASSO.png",width: 50,)),
-          applicationName: 'Appli protection civile',
+          applicationIcon: Tab(icon: new Image.asset("assets/IPIC_ASSO.png",width: 40,)),
+          applicationName: 'protection civile',
           applicationVersion: '1.0',
           applicationLegalese: '© 2023 IPIC-ASSO',
           aboutBoxChildren: aboutBoxChildren,

@@ -294,6 +294,10 @@ class _IdentiteState extends State<Identite> with TickerProviderStateMixin {
   }
 
   metChampsAJour() async {
+    setState(() {
+      future="";
+    });
+    await Future.delayed(Duration(milliseconds: 1));
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
     (doc.form.fields[prefs.getInt("nom_prenom")??0] as PdfTextBoxField).text = nomPrenom.text;
     (doc.form.fields[prefs.getInt("nom_fille")??0] as PdfTextBoxField).text = nomFille.text;
@@ -314,6 +318,7 @@ class _IdentiteState extends State<Identite> with TickerProviderStateMixin {
 
     setState(() {
       enr = true;
+      future="ok";
     });
   }
 
