@@ -149,7 +149,12 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   Future<Map<String,String>> litFichiers() async {
     await prefs();
     if(!await verif_perm()) throw Exception('Oups, l\'application ne va pas pouvoir lire et écrire de PDF, il lui faut un accès au stockage.');
-    Directory directoire = await getExternalStorageDirectory()??await getApplicationDocumentsDirectory();
+    Directory directoire;
+    if (!Platform.isIOS) {
+      directoire = await getExternalStorageDirectory()??await getApplicationDocumentsDirectory();
+    } else {
+      directoire = await getApplicationDocumentsDirectory();
+    }
     Map<String,String> dispositifs = {};
     final dossier = Directory("${directoire.path}/pdf");
     if (!(await dossier.exists())){

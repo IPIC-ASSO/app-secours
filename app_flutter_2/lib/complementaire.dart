@@ -25,7 +25,8 @@ class _ComplementaireState extends State<Complementaire> with TickerProviderStat
   String future = "";
   double largeur = 400;
   final List<Offset> _pointOffset = List.generate(7, (index) => const Offset(0, 0));
-  List<String> type_blessure = List.generate(7, (index) => "--:--");
+  List<TextEditingController> type_blessure = List.generate(7, (index) => TextEditingController());
+  //List<String> type_blessure = List.generate(7, (index) => "--:--");
   List<String> types_b = ["--:--","FO: Fracture Ouverte","FF: Fracture Fermée","DL: Douleur","DE: Déformation","B: Brûlure","H: Hémorragie","P: Plaie", "G: Gonflement"];
   List<String> types_b_c = ["","FO","FF","DL","DE","B","H","P","G"];
   late PointMarkerPainter peinture;
@@ -836,7 +837,7 @@ class _ComplementaireState extends State<Complementaire> with TickerProviderStat
       final blessure = (doc.form.fields[prefs.getInt("blessure_${i+1}")??0] as PdfTextBoxField);
       print(blessure.bounds.centerLeft);
 
-      type_blessure[i] =  types_b[types_b_c.indexOf(blessure.text.isEmpty?"":blessure.text.replaceAll("+ ${i+1}.", ""))];
+      //type_blessure[i] =  types_b[types_b_c.indexOf(blessure.text.isEmpty?"":blessure.text.replaceAll("+ ${i+1}.", ""))];
       final double decalage1;
       final double decalage2;
       if(blessure.bounds.centerLeft.dy-ref.top>ref.height){
@@ -912,7 +913,7 @@ class _ComplementaireState extends State<Complementaire> with TickerProviderStat
       (doc.form.fields[prefs.getInt("caracteristiques_${i+1}")??0] as PdfTextBoxField).text = caracteristiques[i].text;
       (doc.form.fields[prefs.getInt("intensite_${i+1}")??0] as PdfTextBoxField).text = intensite[i].text;
       (doc.form.fields[prefs.getInt("duree_${i+1}")??0] as PdfTextBoxField).text = duree[i].text;
-      (doc.form.fields[prefs.getInt("blessure_${i+1}")??0] as PdfTextBoxField).text = _pointOffset[i].dx<0.1?"":"+ ${i+1}.${types_b_c[types_b.indexOf(type_blessure[i])]}";
+      //(doc.form.fields[prefs.getInt("blessure_${i+1}")??0] as PdfTextBoxField).text = _pointOffset[i].dx>1 &&_pointOffset[i].dx<1.1?"":"+ ${i+1}.${types_b_c[types_b.indexOf(type_blessure[i])]}";
       final Rect rect;
       if(_pointOffset[i].dx<1){
         rect = Rect.fromLTWH(ref.left-3+(_pointOffset[i].dx)*ref.width,ref.top-ref.height/16+(_pointOffset[i].dy)*ref.width, ref.width, ref.height/8);
@@ -1009,31 +1010,31 @@ class _ComplementaireState extends State<Complementaire> with TickerProviderStat
                 ]
               ),
                 Padding(padding:const EdgeInsets.all(4),child:
-                  StatefulBuilder(
-                  builder: (BuildContext context, StateSetter dropDownState){
-                  return DropdownButton<String>(
-                      value: type_blessure[index],
-                      elevation: 16,
-                      style: const TextStyle(color: Colors.deepPurple),
-                      underline: Container(
-                        height: 2,
-                        color: Colors.deepPurpleAccent,
-                      ),
-                      onChanged: (String? value) {
-                        // This is called when the user selects an item.
-                        dropDownState(() {
-                          enr = false;
-                          type_blessure[index] = value!;
-                        });
-                      },
-                      items: types_b.map<DropdownMenuItem<String>>((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
+                Autocomplete<String>(
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    if (textEditingValue.text == '') {
+                      return const Iterable<String>.empty();
+                    }
+                    return types_b.where((String option) {
+                      return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
+                    });
+                  },
+                  fieldViewBuilder: (
+                      BuildContext context,
+                      TextEditingController fieldTextEditingController,
+                      FocusNode fieldFocusNode,
+                      VoidCallback onFieldSubmitted
+                      ) {
+                    return TextField(
+                      controller: fieldTextEditingController,
+                      focusNode: fieldFocusNode,
                     );
-                    })),
+                  },
+                  onSelected: (String selection) {
+                    debugPrint('You just selected $selection');
+                  },
+                )
+          ),
             ]),
             )),
             actions: <Widget>[
@@ -1088,5 +1089,72 @@ class PointMarkerPainter extends ChangeNotifier implements CustomPainter {
   @override
   bool shouldRebuildSemantics(covariant CustomPainter oldDelegate) {
     return true;
+  }
+}
+
+class ChampsBlessure extends StatefulWidget {
+
+  final TextEditingController controle;
+  ChampsBlessure({required this.controle});
+
+  @override
+  _ChampsBlessureState createState() => _ChampsBlessureState();
+}
+
+class _ChampsBlessureState extends State<ChampsBlessure> {
+
+  final FocusNode _focusNode = FocusNode();
+  final List<String> types_b = ["--:--","FO: Fracture Ouverte","FF: Fracture Fermée","DL: Douleur","DE: Déformation","B: Brûlure","H: Hémorragie","P: Plaie", "G: Gonflement"];
+  late OverlayEntry _overlayEntry;
+
+  @override
+  void initState() {
+    _focusNode.addListener(() {
+      if (_focusNode.hasFocus) {
+        this._overlayEntry = this._createOverlayEntry();
+        Overlay.of(context).insert(this._overlayEntry);
+      } else {
+        this._overlayEntry.remove();
+      }
+    });
+  }
+
+  OverlayEntry _createOverlayEntry() {
+    RenderObject? renderBox = context.findRenderObject();
+    var size = renderBox!.semanticBounds.size;
+    var offset = renderBox.semanticBounds.topLeft;
+
+    return OverlayEntry(
+        builder: (context) =>
+            Positioned(
+              left: offset.dx,
+              top: offset.dy + size.height + 5.0,
+              width: size.width,
+              child: Material(
+                elevation: 4.0,
+                child: ListView.builder(
+                  padding: EdgeInsets.zero,
+                  shrinkWrap: true,
+                  itemBuilder: (BuildContext context, int index) {
+                    ListTile(
+                      title: Text(types_b[index]),
+                    );
+                  },
+
+                ),
+              ),
+            )
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: widget.controle,
+      focusNode: this._focusNode,
+      decoration: InputDecoration(
+          labelText: 'Blessure'
+      ),
+    );
   }
 }

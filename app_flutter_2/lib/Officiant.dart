@@ -27,7 +27,14 @@ class Officiant{
     return true;
   }
 
+  Future aplatit(String chemin, BuildContext context) async {
+    final PdfDocument doc = await litFichier(chemin, context);
+    doc.form.flattenAllFields();
+    await doc.save().then((value) => doc.dispose());
+  }
+
   Future<bool> enregistreFichierTelechargement(String chemin)async{
+
     File fichier = File(chemin);
     Directory? telechargements;
     if (Platform.isIOS) {
@@ -47,7 +54,12 @@ class Officiant{
   }
 
   Future<String> nouveauChemin2(String groupe, String nom) async{
-    Directory directoire = await getExternalStorageDirectory()??await getApplicationDocumentsDirectory();
+    Directory directoire;
+    if (!Platform.isIOS) {
+      directoire = await getExternalStorageDirectory()??await getApplicationDocumentsDirectory();
+    } else {
+      directoire = await getApplicationDocumentsDirectory();
+    }
     if (await File("${directoire.path}/pdf/$groupe/$nom.pdf").exists()){
       return "0";
     }else{
@@ -60,7 +72,12 @@ class Officiant{
   }
 
   Future suprDirectoire(String disp)async{
-    Directory directoire = await getExternalStorageDirectory()??await getApplicationDocumentsDirectory();
+    Directory directoire;
+    if (!Platform.isIOS) {
+      directoire = await getExternalStorageDirectory()??await getApplicationDocumentsDirectory();
+    } else {
+      directoire = await getApplicationDocumentsDirectory();
+    }
     if (await Directory("${directoire.path}/pdf/$disp").exists()){
       await Directory("${directoire.path}/pdf/$disp").delete(recursive: true);
     }

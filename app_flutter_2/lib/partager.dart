@@ -106,7 +106,8 @@ class _PartagerState extends State<Partager> with TickerProviderStateMixin {
                     ),
                   ),)
                 ]),
-            onPressed: (){
+            onPressed: () async {
+              await Officiant().aplatit(widget.chemin, context);
               Officiant().enregistreFichierTelechargement(widget.chemin)
                   .then((value)  {
                     if(value)ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Pdf enregistré dans les téléchargements"),));

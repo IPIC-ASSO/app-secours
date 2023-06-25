@@ -346,7 +346,7 @@ class _ResponsabilitesState extends State<Responsabilites> with TickerProviderSt
                               }),
                           ]),
                       ExpansionTile(
-                          title: const Text('Témoins 1'),
+                          title: const Text('Témoin 1'),
                           textColor: Colors.red[200],
                           collapsedTextColor: Colors.black,
                           collapsedBackgroundColor: Colors.red[200],
@@ -421,7 +421,7 @@ class _ResponsabilitesState extends State<Responsabilites> with TickerProviderSt
                               }),
                           ]),
                       ExpansionTile(
-                          title: const Text('Témoins 2'),
+                          title: const Text('Témoin 2'),
                           textColor: Colors.red[200],
                           collapsedTextColor: Colors.black,
                           collapsedBackgroundColor: Colors.red[200],

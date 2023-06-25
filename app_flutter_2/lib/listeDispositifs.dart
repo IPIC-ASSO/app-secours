@@ -136,7 +136,12 @@ class _ListeDispositifsState extends State<ListeDispositifs> with TickerProvider
 
   Future<Map<String,String>> litFichiers() async {
     if(!await verif_perm()) throw Exception('Oups, l\'application ne va pas pouvoir lire et écrire de PDF, il lui faut un accès au stockage.');
-    Directory directoire = await getExternalStorageDirectory()??await getApplicationDocumentsDirectory();
+    Directory directoire;
+    if (!Platform.isIOS) {
+      directoire = await getExternalStorageDirectory()??await getApplicationDocumentsDirectory();
+    } else {
+      directoire = await getApplicationDocumentsDirectory();
+    }
     Map<String,String> victime = {};
     final dossier = Directory("${directoire.path}/pdf/${widget.groupe}");
     if (!await dossier.exists()){
