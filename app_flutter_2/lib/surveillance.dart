@@ -561,7 +561,7 @@ class _SurveillanceState extends State<Surveillance> with TickerProviderStateMix
     setState(() {
       future="";
     });
-    await Future.delayed(Duration(milliseconds: 1));
+    await Future.delayed(const Duration(milliseconds: 1));
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
     (doc.form.fields[prefs.getInt("surveillance_1")??0] as PdfTextBoxField).text = evolution.text;
     (doc.form.fields[prefs.getInt("surveillance_2")??0] as PdfTextBoxField).text = evolution2.text;

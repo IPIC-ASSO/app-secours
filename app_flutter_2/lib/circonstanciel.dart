@@ -395,7 +395,7 @@ class _CirconstancielState extends State<Circonstanciel> with TickerProviderStat
     setState(() {
       future="";
     });
-    await Future.delayed(Duration(milliseconds: 1));
+    await Future.delayed(const Duration(milliseconds: 1));
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
     (doc.form.fields[prefs.getInt("danger")??0] as PdfTextBoxField).text = securite.text;
     (doc.form.fields[prefs.getInt("supprime")??0] as PdfCheckBoxField).isChecked = supr;

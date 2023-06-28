@@ -716,7 +716,6 @@ class _ResponsabilitesState extends State<Responsabilites> with TickerProviderSt
   Future displayTimePicker(BuildContext context, TextEditingController heureC) async {
     TimeOfDay heure;
     if (heureC.text!=""){
-      print(heureC.text);
       heure = TimeOfDay(hour:int.parse(heureC.text.split(":")[0]),minute: int.parse(heureC.text.split(":")[1]));
     }else{
       heure = TimeOfDay.now();
@@ -818,7 +817,7 @@ class _ResponsabilitesState extends State<Responsabilites> with TickerProviderSt
     setState(() {
       future="";
     });
-    await Future.delayed(Duration(milliseconds: 1));
+    await Future.delayed(const Duration(milliseconds: 1));
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
     (doc.form.fields[prefs.getInt("nom_responsable")??0] as PdfTextBoxField).text = nomResponsable.text;
     (doc.form.fields[prefs.getInt("nom_IAO")??0] as PdfTextBoxField).text = nomResponsableHop.text;

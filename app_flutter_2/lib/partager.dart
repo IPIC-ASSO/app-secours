@@ -87,7 +87,7 @@ class _PartagerState extends State<Partager> with TickerProviderStateMixin {
                   ),)
                 ]),
             onPressed: (){
-              Share.shareFiles([widget.chemin], text: 'dispositif: ${widget.chemin.split("/")[widget.chemin.split("/").length-2]} n° ${widget.chemin.split("/").last}');
+              Share.shareXFiles([XFile(widget.chemin)], text: 'dispositif: ${widget.chemin.split("/")[widget.chemin.split("/").length-2]} n° ${widget.chemin.split("/").last}');
             },
           ),
         ),

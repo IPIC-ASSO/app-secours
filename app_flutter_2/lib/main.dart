@@ -22,7 +22,7 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    SystemChrome.setEnabledSystemUIMode (SystemUiMode.leanBack);
+    SystemChrome.setEnabledSystemUIMode (SystemUiMode.immersive);
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'App protection civile',
@@ -189,13 +189,13 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         padding: const EdgeInsets.all(10),
         child: Row(
           children: [
-            Flexible(flex:0,child: const Icon(
+            const Flexible(flex:0,child: Icon(
               Icons.folder_open,
               color: Colors.blue,
               size: 60,
             ),),
             Expanded(flex:1,child: Text(disp, textAlign: TextAlign.center,),),
-            Flexible(flex:0,child:IconButton(onPressed: ()=>confirmeSupr(disp), icon: Icon(Icons.delete))),
+            Flexible(flex:0,child:IconButton(onPressed: ()=>confirmeSupr(disp), icon: const Icon(Icons.delete))),
           ],
         ),
       )
@@ -228,15 +228,15 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
         builder: (BuildContext context) {
       return AlertDialog(
           title: const Text('Suppresion'),
-          content: Text("Voulez vous vraiment supprimer ce dispositif? (${disp})?"),
+          content: Text("Voulez vous vraiment supprimer ce dispositif? ($disp)?"),
           actions: <Widget>[
-            TextButton(onPressed: ()=>Navigator.of(context).pop(), child: Text("Annuler")),
+            TextButton(onPressed: ()=>Navigator.of(context).pop(), child: const Text("Annuler")),
             TextButton(onPressed: () async{
               Officiant().suprDirectoire(disp).onError((error, stackTrace) => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Une erreur est survenue"),)));
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Supprimé"),));
               Navigator.of(context).pop();
               listedispositifs = litFichiers();
-            }, child: Text("Supprimer")),
+            }, child: const Text("Supprimer")),
         ],
       );});
   }

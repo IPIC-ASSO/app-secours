@@ -175,7 +175,7 @@ class _DeclenchementState extends State<Declenchement> with TickerProviderStateM
                   controller: num_dispositif,
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
-                    labelText: 'Numéros fiche',
+                    labelText: 'fiche n°',
                   ),
                 )),
                 Padding(padding:const EdgeInsets.all(4),child: TextField(
@@ -346,7 +346,7 @@ class _DeclenchementState extends State<Declenchement> with TickerProviderStateM
     setState(() {
       future="";
     });
-    await Future.delayed(Duration(milliseconds: 1));
+    await Future.delayed(const Duration(milliseconds: 1));
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
     (doc.form.fields[prefs.getInt("dispositif")??0] as PdfTextBoxField).text = dispositif.text;
     (doc.form.fields[prefs.getInt("num")??0] as PdfTextBoxField).text = numeros.text;

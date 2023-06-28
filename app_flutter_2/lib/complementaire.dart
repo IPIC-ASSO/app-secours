@@ -25,7 +25,7 @@ class _ComplementaireState extends State<Complementaire> with TickerProviderStat
   String future = "";
   double largeur = 400;
   final List<Offset> _pointOffset = List.generate(7, (index) => const Offset(0, 0));
-  List<TextEditingController> type_blessure = List.generate(7, (index) => TextEditingController());
+  List<String> type_blessure = List.generate(7, (index) => "");
   //List<String> type_blessure = List.generate(7, (index) => "--:--");
   List<String> types_b = ["--:--","FO: Fracture Ouverte","FF: Fracture Fermée","DL: Douleur","DE: Déformation","B: Brûlure","H: Hémorragie","P: Plaie", "G: Gonflement"];
   List<String> types_b_c = ["","FO","FF","DL","DE","B","H","P","G"];
@@ -827,7 +827,6 @@ class _ComplementaireState extends State<Complementaire> with TickerProviderStat
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
     prefs = await SharedPreferences.getInstance();
     Rect ref = (doc.form.fields[prefs.getInt("blessure_0")??0] as PdfTextBoxField).bounds;
-    print(ref.left);
     for (int i =0; i<plainte.length;i++){
       plainte[i].text  = (doc.form.fields[prefs.getInt("plainte_${i+1}")??0] as PdfTextBoxField).text;
       circonstances[i].text  = (doc.form.fields[prefs.getInt("circonstances_${i+1}")??0] as PdfTextBoxField).text;
@@ -835,9 +834,7 @@ class _ComplementaireState extends State<Complementaire> with TickerProviderStat
       intensite[i].text  = (doc.form.fields[prefs.getInt("intensite_${i+1}")??0] as PdfTextBoxField).text;
       duree[i].text  = (doc.form.fields[prefs.getInt("duree_${i+1}")??0] as PdfTextBoxField).text;
       final blessure = (doc.form.fields[prefs.getInt("blessure_${i+1}")??0] as PdfTextBoxField);
-      print(blessure.bounds.centerLeft);
-
-      //type_blessure[i] =  types_b[types_b_c.indexOf(blessure.text.isEmpty?"":blessure.text.replaceAll("+ ${i+1}.", ""))];
+      type_blessure[i] =  types_b_c.contains(blessure.text.replaceAll("+ ${i+1}.", ""))?types_b[types_b_c.indexOf(blessure.text.isEmpty?"":blessure.text.replaceAll("+ ${i+1}.", ""))]:blessure.text.replaceAll("+ ${i+1}.", "");
       final double decalage1;
       final double decalage2;
       if(blessure.bounds.centerLeft.dy-ref.top>ref.height){
@@ -848,11 +845,7 @@ class _ComplementaireState extends State<Complementaire> with TickerProviderStat
         decalage1 = 0;
         decalage2 = 0;
       }
-
       _pointOffset[i] = Offset(((blessure.bounds.centerLeft.dx+3-ref.left)/ref.width +decalage1),((blessure.bounds.centerLeft.dy-ref.top -decalage2)/ref.width));
-      print(_pointOffset[i]);
-      print(blessure.name);
-
     }
     allergies.text  = (doc.form.fields[prefs.getInt("allergies")??0] as PdfTextBoxField).text;
     medicaments.text  = (doc.form.fields[prefs.getInt("medicaments")??0] as PdfTextBoxField).text;
@@ -904,7 +897,7 @@ class _ComplementaireState extends State<Complementaire> with TickerProviderStat
     setState(() {
       future="";
     });
-    await Future.delayed(Duration(milliseconds: 1));
+    await Future.delayed(const Duration(milliseconds: 1));
     PdfDocument doc = await Officiant().litFichier(widget.chemin, context);
     Rect ref = (doc.form.fields[prefs.getInt("blessure_0")??0] as PdfTextBoxField).bounds;
     for (int i =0; i<plainte.length;i++){
@@ -913,16 +906,17 @@ class _ComplementaireState extends State<Complementaire> with TickerProviderStat
       (doc.form.fields[prefs.getInt("caracteristiques_${i+1}")??0] as PdfTextBoxField).text = caracteristiques[i].text;
       (doc.form.fields[prefs.getInt("intensite_${i+1}")??0] as PdfTextBoxField).text = intensite[i].text;
       (doc.form.fields[prefs.getInt("duree_${i+1}")??0] as PdfTextBoxField).text = duree[i].text;
-      //(doc.form.fields[prefs.getInt("blessure_${i+1}")??0] as PdfTextBoxField).text = _pointOffset[i].dx>1 &&_pointOffset[i].dx<1.1?"":"+ ${i+1}.${types_b_c[types_b.indexOf(type_blessure[i])]}";
-      final Rect rect;
-      if(_pointOffset[i].dx<1){
-        rect = Rect.fromLTWH(ref.left-3+(_pointOffset[i].dx)*ref.width,ref.top-ref.height/16+(_pointOffset[i].dy)*ref.width, ref.width, ref.height/8);
-        print(rect);
-      }else{
-        print("1");
-        rect = Rect.fromLTWH(ref.left-3+(_pointOffset[i].dx-1)*ref.width,ref.top+ref.height-ref.height/16+(_pointOffset[i].dy)*ref.width , ref.width, ref.height/8);
+      if(_pointOffset[i].dx<1.9){
+        (doc.form.fields[prefs.getInt("blessure_${i+1}")??0] as PdfTextBoxField).text = (types_b.contains(type_blessure[i])?"+ ${i+1}.${types_b_c[types_b.indexOf(type_blessure[i])]}":"+ ${i+1}.${type_blessure[i]}");
+        final Rect rect;
+        if(_pointOffset[i].dx<1){
+          rect = Rect.fromLTWH(ref.left-3+(_pointOffset[i].dx)*ref.width,ref.top-ref.height/16+(_pointOffset[i].dy)*ref.width, ref.width, ref.height/8);
+        }else{
+          rect = Rect.fromLTWH(ref.left-3+(_pointOffset[i].dx-1)*ref.width,ref.top+ref.height-ref.height/16+(_pointOffset[i].dy)*ref.width , ref.width, ref.height/8);
+        }
+        (doc.form.fields[prefs.getInt("blessure_${i+1}")??0] as PdfTextBoxField).bounds = rect;
       }
-      (doc.form.fields[prefs.getInt("blessure_${i+1}")??0] as PdfTextBoxField).bounds = rect;
+
     }
     (doc.form.fields[prefs.getInt("allergies")??0] as PdfTextBoxField).text = allergies.text;
     (doc.form.fields[prefs.getInt("medicaments")??0] as PdfTextBoxField).text = medicaments.text;
@@ -985,14 +979,13 @@ class _ComplementaireState extends State<Complementaire> with TickerProviderStat
             peinture.modif(Offset(_pointOffset[index].dx*lar,_pointOffset[index].dy*lar));
           });
           return AlertDialog(
-            contentPadding: EdgeInsets.all(20),
+            contentPadding: const EdgeInsets.all(20),
             title: const Text('Localisation de la blessure'),
             content: GestureDetector(
               onTapDown: (TapDownDetails details) {
                 final double lar = (porte.currentContext!.size!.width)/2;
                 setState(() {
                   _pointOffset[index] = Offset(details.localPosition.dx/lar,details.localPosition.dy/lar);
-                  print(_pointOffset[index]);
                   peinture.modif(details.localPosition);
                 });
               },
@@ -1025,13 +1018,17 @@ class _ComplementaireState extends State<Complementaire> with TickerProviderStat
                       FocusNode fieldFocusNode,
                       VoidCallback onFieldSubmitted
                       ) {
+                    fieldTextEditingController.text = type_blessure[index];
                     return TextField(
                       controller: fieldTextEditingController,
                       focusNode: fieldFocusNode,
+                      onChanged: (val) {
+                        type_blessure[index] = val;
+                      },
                     );
                   },
                   onSelected: (String selection) {
-                    debugPrint('You just selected $selection');
+                    type_blessure[index] = selection;
                   },
                 )
           ),
@@ -1089,72 +1086,5 @@ class PointMarkerPainter extends ChangeNotifier implements CustomPainter {
   @override
   bool shouldRebuildSemantics(covariant CustomPainter oldDelegate) {
     return true;
-  }
-}
-
-class ChampsBlessure extends StatefulWidget {
-
-  final TextEditingController controle;
-  ChampsBlessure({required this.controle});
-
-  @override
-  _ChampsBlessureState createState() => _ChampsBlessureState();
-}
-
-class _ChampsBlessureState extends State<ChampsBlessure> {
-
-  final FocusNode _focusNode = FocusNode();
-  final List<String> types_b = ["--:--","FO: Fracture Ouverte","FF: Fracture Fermée","DL: Douleur","DE: Déformation","B: Brûlure","H: Hémorragie","P: Plaie", "G: Gonflement"];
-  late OverlayEntry _overlayEntry;
-
-  @override
-  void initState() {
-    _focusNode.addListener(() {
-      if (_focusNode.hasFocus) {
-        this._overlayEntry = this._createOverlayEntry();
-        Overlay.of(context).insert(this._overlayEntry);
-      } else {
-        this._overlayEntry.remove();
-      }
-    });
-  }
-
-  OverlayEntry _createOverlayEntry() {
-    RenderObject? renderBox = context.findRenderObject();
-    var size = renderBox!.semanticBounds.size;
-    var offset = renderBox.semanticBounds.topLeft;
-
-    return OverlayEntry(
-        builder: (context) =>
-            Positioned(
-              left: offset.dx,
-              top: offset.dy + size.height + 5.0,
-              width: size.width,
-              child: Material(
-                elevation: 4.0,
-                child: ListView.builder(
-                  padding: EdgeInsets.zero,
-                  shrinkWrap: true,
-                  itemBuilder: (BuildContext context, int index) {
-                    ListTile(
-                      title: Text(types_b[index]),
-                    );
-                  },
-
-                ),
-              ),
-            )
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return TextFormField(
-      controller: widget.controle,
-      focusNode: this._focusNode,
-      decoration: InputDecoration(
-          labelText: 'Blessure'
-      ),
-    );
   }
 }

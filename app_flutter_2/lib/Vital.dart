@@ -1973,7 +1973,7 @@ class _VitalState extends State<Vital> with TickerProviderStateMixin {
     setState(() {
       future="";
     });
-    await Future.delayed(Duration(milliseconds: 1));
+    await Future.delayed(const Duration(milliseconds: 1));
     doc = await Officiant().litFichier(widget.chemin, context);
     (doc.form.fields[prefs.getInt("arreter")??0] as PdfCheckBoxField).isChecked = arreter;
     (doc.form.fields[prefs.getInt("pansement")??0] as PdfCheckBoxField).isChecked = pansement_imb;
